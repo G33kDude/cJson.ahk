@@ -56,9 +56,9 @@ struct Object
 #define SYM_OPERAND 5
 #define SYM_OBJECT 6
 
-int itow(int64_t number, LPTSTR *ppszString, DWORD *pcchString);
-int itoh(TCHAR number, LPTSTR *ppszString, DWORD *pcchString);
-int escape(LPTSTR stronk, LPTSTR *ppszString, DWORD *pcchString);
+int write_dec_int64(int64_t number, LPTSTR *ppszString, DWORD *pcchString);
+int write_hex_uint16(TCHAR number, LPTSTR *ppszString, DWORD *pcchString);
+int write_escaped(LPTSTR stronk, LPTSTR *ppszString, DWORD *pcchString);
 
 #define write(char)              \
 	if (ppszString)              \
@@ -76,35 +76,29 @@ MCODE_EXPORT(dumps);
 int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTrue, Object *pobjFalse, Object *pobjNull)
 {
 
-	// Probably a COM Object -- or an empty object, apparently
+	// Check the vtable against a known AHK object to verify it is not a COM object
 	if (pobjIn->dummy[0] != pobjNull->dummy[0])
 	{
 		write_str("\"Unknown_Object_");
-		itow((int64_t)pobjIn, ppszString, pcchString);
+		write_dec_int64((int64_t)pobjIn, ppszString, pcchString);
 		write('"');
 		return 0;
-
 	}
-	// if (!pobjIn->pFields)
-	// {
-	// }
 
 	// Check if the object is a sequentially indexed array
-	bool isIndexed = true;
-	if (pobjIn->iObjectKeysOffset == pobjIn->cFields)
-	{ // All numeric fields
+	bool isIndexed = false;
+	if (pobjIn->iObjectKeysOffset == pobjIn->cFields) // Are all fields numeric?
+	{
+		// Check that all numeric keys' values match their index
+		isIndexed = true;
 		for (int i = 0; isIndexed && i < pobjIn->cFields; i++)
 		{
 			Field *currentField = pobjIn->pFields + i;
 			isIndexed = currentField->iKey == i + 1;
 		}
 	}
-	else
-	{
-		isIndexed = false;
-	}
 
-	// Output opening brace
+	// Output the opening brace
 	write(isIndexed ? '[' : '{');
 
 	// Enumerate fields
@@ -119,27 +113,27 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTru
 			write(' ');
 		}
 
+		// Output the key and colon
 		if (!isIndexed)
 		{
-			// Output key
 			if (i < pobjIn->iObjectKeysOffset)
 			{
 				// Integer
 				write('"');
-				itow(currentField->iKey, ppszString, pcchString);
+				write_dec_int64(currentField->iKey, ppszString, pcchString);
 				write('"');
 			}
 			else if (i < pobjIn->iStringKeysOffset)
 			{
 				// Object
 				write_str("\"Object_");
-				itow(currentField->iKey, ppszString, pcchString);
+				write_dec_int64(currentField->iKey, ppszString, pcchString);
 				write('"');
 			}
 			else
 			{
 				// String
-				escape(currentField->pstrKey, ppszString, pcchString);
+				write_escaped(currentField->pstrKey, ppszString, pcchString);
 			}
 
 			// Output colon key-value separator
@@ -147,11 +141,11 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTru
 			write(' ');
 		}
 
-		// Output Value
-		if (currentField->SymbolType == SYM_OPERAND)
+		// Output the value
+		if (currentField->SymbolType == PURE_INTEGER)
 		{
-			// String
-			escape(currentField->pstrValue, ppszString, pcchString);
+			// Integer
+			write_dec_int64(currentField->iValue, ppszString, pcchString);
 		}
 		else if (currentField->SymbolType == SYM_OBJECT)
 		{
@@ -173,30 +167,32 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTru
 				dumps(currentField->pobjValue, ppszString, pcchString, pobjTrue, pobjFalse, pobjNull);
 			}
 		}
-		else if (currentField->SymbolType == PURE_INTEGER)
+		else if (currentField->SymbolType == SYM_OPERAND)
 		{
-			// Integer
-			itow(currentField->iValue, ppszString, pcchString);
+			// String
+			write_escaped(currentField->pstrValue, ppszString, pcchString);
 		}
 		else
 		{
 			// Unknown
 			write_str("\"Unknown_Value_");
-			itow(currentField->iValue, ppszString, pcchString);
+			write_dec_int64(currentField->iValue, ppszString, pcchString);
 			write('"');
 		}
 	}
 
-	// Output closing brace
+	// Output the closing brace
 	write(isIndexed ? ']' : '}');
 
 	return 0;
 }
 
-int escape(LPTSTR pt, LPTSTR *ppszString, DWORD *pcchString)
+int write_escaped(LPTSTR pt, LPTSTR *ppszString, DWORD *pcchString)
 {
-	// String
+	// Output the opening quote
 	write('"');
+
+	// Process the input string until a null terminator is reached
 	for (; (*pt) != 0; pt++)
 	{
 		if (*pt == '"') // quotation mark
@@ -238,7 +234,7 @@ int escape(LPTSTR pt, LPTSTR *ppszString, DWORD *pcchString)
 		{
 			write('\\');
 			write('u');
-			itoh(*pt, ppszString, pcchString);
+			write_hex_uint16(*pt, ppszString, pcchString);
 		}
 		else
 		{
@@ -248,34 +244,29 @@ int escape(LPTSTR pt, LPTSTR *ppszString, DWORD *pcchString)
 	write('"');
 }
 
-int itoh(TCHAR number, LPTSTR *ppszString, DWORD *pcchString)
+int write_hex_uint16(uint16_t number, LPTSTR *ppszString, DWORD *pcchString)
 {
-	TCHAR buf[4];
+	uint16_t buffer[4];
 	char *lookup = "0123456789ABCDEF";
 
 	// Extract the hex values
 	for (int i = 0; i < 4; ++i)
 	{
-		// buf[i] = number % 16 + 'A'; //lookup[number % 16];
-		buf[i] = lookup[number % 16];
+		buffer[i] = lookup[number % 16];
 		number /= 16;
 	}
 
+	// Output in reverse-buffer order
 	for (int i = 3; i >= 0; --i)
-	{
-		write(buf[i]);
-	}
+		write(buffer[i]);
 
 	return 0;
 }
 
-int itow(int64_t number, LPTSTR *ppszString, DWORD *pcchString)
+int write_dec_int64(int64_t number, LPTSTR *ppszString, DWORD *pcchString)
 {
-	// write('&');
-	// return 0;
-
-	// enough to fit the longest int64_t -9223372036854775808
-	TCHAR buf[20];
+	// A buffer large enough to fit the longest int64_t (-9223372036854775808)
+	TCHAR buffer[20];
 
 	bool sign = 0;
 	int i = 0;
@@ -290,34 +281,24 @@ int itow(int64_t number, LPTSTR *ppszString, DWORD *pcchString)
 	// Extract the decimal values
 	do
 	{
-		buf[i++] = (TCHAR)(number % 10 + '0');
+		buffer[i++] = (TCHAR)(number % 10 + '0');
 		number /= 10;
 	} while (number != 0);
 
 	// Add the negative sign
 	if (sign)
-	{
-		buf[i++] = '-';
-	}
+		buffer[i++] = '-';
 
-	// Reverse area of memory
-	// for (int j = 0; j*2 < i; j++) {
-	//	 TCHAR t = buf[j];
-	//	 buf[j] = buf[i-1-j];
-	//	 buf[i-1-j] = t;
-	// }
-
+	// Output in reverse-buffer order
 	for (--i; i >= 0; --i)
-	{
-		write(buf[i]);
-	}
+		write(buffer[i]);
 
 	return 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Loads
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 union OutType
 {
@@ -326,10 +307,18 @@ union OutType
 	intptr_t outptr;
 };
 
-#define skipws                                                                          \
+#define skip_whitespace                                                                 \
 	while (**ppJson == ' ' || **ppJson == '\n' || **ppJson == '\r' || **ppJson == '\t') \
 	{                                                                                   \
 		(*ppJson)++;                                                                    \
+	}
+
+#define expect_str(str)               \
+	for (int i = 0; str[i] != 0; ++i) \
+	{                                 \
+		if (str[i] != **ppJson)       \
+			return -1;                \
+		(*ppJson)++;                  \
 	}
 
 typedef int fnPush(intptr_t obj, int action, intptr_t value, intptr_t typeValue, intptr_t key, intptr_t typeKey);
@@ -341,311 +330,304 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 	pResult->outint = 0;
 	*pResultType = 0;
 
-	skipws if (**ppJson == '{')
-	{									 ///////////////////////////////////////////////////////////////// Object
-		intptr_t pObj = (*pfnGetObj)(5); // Get object from host script
-		(*ppJson)++;					 // Open brace
+	// Skip over any leading whitespace
+	skip_whitespace;
 
-		while (**ppJson != 0)
+	if (**ppJson == '{') //////////////////////////////////////////////////////////////////////////////////////// Object
+	{
+		// Skip the open brace
+		(*ppJson)++;
+
+		// Get an object from the host script to populate
+		intptr_t pObj = (*pfnGetObj)(5);
+
+		// Process key/value pairs
+		while (true)
 		{
 			union OutType tmpKey;
 			int tmpKeyType;
-			skipws;
-			if (**ppJson == '}')
-			{
+
+			// Break at the end of the object/input
+			skip_whitespace;
+			if (**ppJson == '}' || **ppJson == 0)
 				break;
-			} // Close brace check
+
+			// Load the pair key into &tmpKey
 			if (loads(pfnPush, pfnGetObj, ppJson, &tmpKey, &tmpKeyType))
-			{
 				return -1;
-			} // Key
 
-			skipws;
+			// Skip the colon separator or error on unexpected character
+			skip_whitespace;
 			if (**ppJson != ':')
-			{
 				return -1;
-			}
-			(*ppJson)++; // Colon
+			(*ppJson)++;
+
+			// Load the pair value into pResult
 			if (loads(pfnPush, pfnGetObj, ppJson, pResult, pResultType))
-			{
 				return -1;
-			}													   // Value
-			if ((*pfnPush)(pObj, 5, pResult->outptr, *pResultType, // Push
-						   tmpKey.outint, tmpKeyType))
-			{
+
+			// Call the host push function with our key/value pair
+			if ((*pfnPush)(pObj, 5, pResult->outptr, *pResultType, tmpKey.outint, tmpKeyType))
 				return -1;
-			} // ^^^^
-			skipws;
+
+			// Skip the comma separator or break on other character
+			skip_whitespace;
 			if (**ppJson != ',')
-			{
 				break;
-			}
-			(*ppJson)++; // Comma check
+			(*ppJson)++;
 		}
 
+		// Skip the closing brace or error on unexpected character
 		if (**ppJson != '}')
-		{
 			return -1;
-		}
-		(*ppJson)++; // Close brace
+		(*ppJson)++;
 
+		// Yield the object
 		pResult->outptr = pObj;
 		*pResultType = 5;
-
 		return 0;
 	}
-	else if (**ppJson == '[')
-	{									 ////////////////////////////////////////////////////////// Array
-		intptr_t pObj = (*pfnGetObj)(4); // Get array from host script
-		(*ppJson)++;					 // Open bracket
+	else if (**ppJson == '[') //////////////////////////////////////////////////////////////////////////////////// Array
+	{
+		// Skip the opening bracket
+		(*ppJson)++;
 
-		while (**ppJson != 0)
+		// Get an array from the host script to populate
+		intptr_t pObj = (*pfnGetObj)(4);
+
+		// Process values pairs
+		while (true)
 		{
-			skipws;
-			if (**ppJson == ']')
-			{
+			// Break at the end of the array/input
+			skip_whitespace;
+			if (**ppJson == ']' || **ppJson == 0)
 				break;
-			} // Close bracket check
+
+			// Load the value into pResult
 			if (loads(pfnPush, pfnGetObj, ppJson, pResult, pResultType))
-			{
 				return -1;
-			} // Value
+
+			// Call the host push function with our value
 			if ((*pfnPush)(pObj, 4, pResult->outptr, *pResultType, 0, 0))
-			{
 				return -1;
-			} // Push
-			skipws;
+
+			// Skip the comma separator or break on other character
+			skip_whitespace;
 			if (**ppJson != ',')
-			{
 				break;
-			}
-			(*ppJson)++; // Comma check
+			(*ppJson)++;
 		}
 
+		// Skip the closing bracket or error on unexpected character
 		if (**ppJson != ']')
-		{
 			return -1;
-		}
-		(*ppJson)++; // Close bracket
+		(*ppJson)++;
 
+		// Yield the array
 		*pResultType = 4;
 		pResult->outptr = pObj;
-
 		return 0;
 	}
-	else if (**ppJson == '"')
-	{ ////////////////////////////////////////////////////////// String
-		short *pTarget = *ppJson;
-		pResult->outptr = (intptr_t)*ppJson;
-		*pResultType = 3;
+	else if (**ppJson == '"') /////////////////////////////////////////////////////////////////////////////////// String
+	{
+		// Skip the opening quote
 		(*ppJson)++;
+
+		// We'll re-use the area of memory where the encoded string is to form
+		// the unescaped string. Use pszOut to point to the end of the
+		// output string.
+		short *pszOut = *ppJson;
+
+		// Go ahead and set the output pointer before we start advancing pszOut
+		pResult->outptr = (intptr_t)pszOut;
+		*pResultType = 3;
 
 		while (**ppJson != '"')
 		{
-
+			// Error at the unexpected end of the input
 			if (**ppJson == 0)
-			{
 				return -1;
-			} // Unexpected null
-			else if (**ppJson == '\\')
-			{				 // Escape sequence
-				(*ppJson)++; // Move past backslash
 
-				if (**ppJson == '"')
-				{
-					*pTarget = '"';
-					pTarget++;
-					(*ppJson)++;
-				} // Quotation mark
-				else if (**ppJson == '\\')
-				{
-					*pTarget = '\\';
-					pTarget++;
-					(*ppJson)++;
-				} // Reverse solidus
-				else if (**ppJson == '/')
-				{
-					*pTarget = '/';
-					pTarget++;
-					(*ppJson)++;
-				} // Solidus
-				else if (**ppJson == 'b')
-				{
-					*pTarget = '\b';
-					pTarget++;
-					(*ppJson)++;
-				} // Backspace
-				else if (**ppJson == 'f')
-				{
-					*pTarget = '\f';
-					pTarget++;
-					(*ppJson)++;
-				} // Form feed
-				else if (**ppJson == 'n')
-				{
-					*pTarget = '\n';
-					pTarget++;
-					(*ppJson)++;
-				} // Line feed
-				else if (**ppJson == 'r')
-				{
-					*pTarget = '\r';
-					pTarget++;
-					(*ppJson)++;
-				} // Return carriage
-				else if (**ppJson == 't')
-				{
-					*pTarget = '\t';
-					pTarget++;
-					(*ppJson)++;
-				} // Tab
-				else if (**ppJson == 'u')
-				{ // Unicode codepoint
+			// Process any escape sequence
+			if (**ppJson == '\\')
+			{
+				// Skip the backslash
+				(*ppJson)++;
 
-					*pTarget = 0;
-					for (int i = 0; i < 4; ++i)
-					{
-						(*ppJson)++;
-						*pTarget *= 16;
-						if (**ppJson >= '0' && **ppJson <= '9')
-						{
-							*pTarget += **ppJson - '0';
-						}
-						else if (**ppJson >= 'A' && **ppJson <= 'F')
-						{
-							*pTarget += **ppJson - 'A' + 10;
-						}
-						else if (**ppJson >= 'a' && **ppJson <= 'f')
-						{
-							*pTarget += **ppJson - 'a' + 10;
-						}
-						else
-						{
-							return -1;
-						}
-					}
-					pTarget++;
+				if (**ppJson == '"') // Quotation mark
+				{
+					*pszOut++ = '"';
 					(*ppJson)++;
 				}
-				else
+				else if (**ppJson == '\\') // Reverse solidus
 				{
-					return -1;
-				} // Unknown character or null
-			}
-			else
-			{
+					*pszOut++ = '\\';
+					(*ppJson)++;
+				}
+				else if (**ppJson == '/') // Solidus
+				{
+					*pszOut++ = '/';
+					(*ppJson)++;
+				}
+				else if (**ppJson == 'b') // Backspace
+				{
+					*pszOut++ = '\b';
+					(*ppJson)++;
+				}
+				else if (**ppJson == 'f') // Form feed
+				{
+					*pszOut++ = '\f';
+					(*ppJson)++;
+				}
+				else if (**ppJson == 'n') // Line feed
+				{
+					*pszOut++ = '\n';
+					(*ppJson)++;
+				}
+				else if (**ppJson == 'r') // Return carriage
+				{
+					*pszOut++ = '\r';
+					(*ppJson)++;
+				}
+				else if (**ppJson == 't') // Tab
+				{
+					*pszOut++ = '\t';
+					(*ppJson)++;
+				}
+				else if (**ppJson == 'u') // Unicode codepoint
+				{
+					// Skip the leading 'u'
+					(*ppJson)++;
 
-				// Copy character to target and increase both pointers
-				*pTarget = **ppJson;
-				pTarget++;
-				(*ppJson)++;
+					// Calculate character value from next 4 hex digits
+					*pszOut = 0;
+					for (int i = 0; i < 4; ++i)
+					{
+						*pszOut *= 16;
+						if (**ppJson >= '0' && **ppJson <= '9')
+							*pszOut += **ppJson - '0';
+						else if (**ppJson >= 'A' && **ppJson <= 'F')
+							*pszOut += **ppJson - 'A' + 10;
+						else if (**ppJson >= 'a' && **ppJson <= 'f')
+							*pszOut += **ppJson - 'a' + 10;
+						else
+							return -1;
+						(*ppJson)++;
+					}
+
+					// Advance the output pointer
+					pszOut++;
+				}
+				else // Unknown character or unexpected null
+					return -1;
 			}
+			else // Perform a 1:1 copy from input to output
+				*pszOut++ = *(*ppJson)++;
 		}
 
-		*pTarget = 0; // Null terminate
-		(*ppJson)++;  // Pass end quote
+		*pszOut = 0; // Null terminate
+		(*ppJson)++; // Pass end quote
 
 		return 0;
 	}
-	else if (**ppJson == '-' || (**ppJson >= '0' && **ppJson <= '9'))
-	{ ////////////////// Number
+	else if (**ppJson == '-' || (**ppJson >= '0' && **ppJson <= '9')) /////////////////////////////////////////// Number
+	{
+		// Assume a positive integer, real type checked later
 		int polarity = 1;
 		pResult->outint = 0;
 		*pResultType = 1;
 
+		// Check if negative
 		if (**ppJson == '-')
 		{
 			polarity = -1;
 			(*ppJson)++;
-		} // Negative
+		}
 
-		if (**ppJson == '0')
+		// Process the integer portion
+		if (**ppJson == '0') // Just a zero
 		{
 			pResult->outint = 0;
 			(*ppJson)++;
-		} // Just Zero
-		else if (**ppJson >= '1' && **ppJson <= '9')
-		{ // if 1-9 then
+		}
+		else if (**ppJson >= '1' && **ppJson <= '9') // Starts with 1-9
+		{
+			// Process digits 0-9
 			while (**ppJson >= '0' && **ppJson <= '9')
-			{									   //   for digit 0-9+
-				pResult->outint *= 10;			   //     output *= 10
-				pResult->outint += **ppJson - '0'; //     output += digit
-				(*ppJson)++;
-			}
+				pResult->outint = (pResult->outint * 10) + *(*ppJson)++ - '0';
 		}
 		else
 		{
 			return -1;
 		}
 
-		// Decimal
+		// Process the decimal portion
 		if (**ppJson == '.')
 		{
+			// Skip the leading decimal point
 			(*ppJson)++;
+
+			// Cast a double from the integer
 			pResult->outdub = pResult->outint;
 			*pResultType = 2;
+
+			// Process digits 0-9
 			int divisor = 1;
 			while (**ppJson >= '0' && **ppJson <= '9')
 			{
 				divisor *= 10;
-				pResult->outdub += (double)(**ppJson - '0') / divisor;
-				(*ppJson)++;
+				pResult->outdub += (double)(*(*ppJson)++ - '0') / divisor;
 			}
 		}
 
-		// Exponentation
+		// Process any exponential notation
 		if (**ppJson == 'e' || **ppJson == 'E')
 		{
+			// Skip the leading 'e'
 			(*ppJson)++;
+
+			// Cast the output to double if it was not already cast to double
 			if (*pResultType == 1)
-			{ // Cast to double if necessary
+			{
 				pResult->outdub = pResult->outint;
 				*pResultType = 2;
 			}
 
 			// Choose to multiply or divide
-			int divide = 0;
+			bool divide = false;
 			if (**ppJson == '-')
 			{
-				divide = 1;
+				divide = true;
 				(*ppJson)++;
 			}
 			else if (**ppJson == '+')
 			{
-				divide = 0;
+				divide = false;
 				(*ppJson)++;
 			}
 
-			// Decode exponent
-			int exponent = 0;
+			// Error on missing exponent
 			if (!(**ppJson >= '0' && **ppJson <= '9'))
-			{
 				return -1;
-			}
-			while (**ppJson >= '0' && **ppJson <= '9')
-			{
-				exponent = (exponent * 10) + (**ppJson - '0');
-				(*ppJson)++;
-			}
 
-			// Apply the exponent
+			// Process digits 0-9
+			int exponent = 0;
+			while (**ppJson >= '0' && **ppJson <= '9')
+				exponent = (exponent * 10) + (*(*ppJson)++ - '0');
+
+			// Calculate the multiplier/divisor from the exponent
 			int factor = 1;
 			for (int i = 0; i < exponent; ++i)
-			{
 				factor *= 10;
-			}
+
+			// Apply the multiplier/divisor
 			if (divide)
-			{
 				pResult->outdub /= (double)factor;
-			}
 			else
-			{
 				pResult->outdub *= (double)factor;
-			}
-			// if (divide) { for (int i = 0; i < exponent; ++i) { pResult->outdub /= 10; } }
-			// else { for (int i = 0; i < exponent; ++i) { pResult->outdub *= 10; } }
 		}
 
+		// Apply the polarity modifier
 		if (*pResultType == 1)
 			pResult->outint *= polarity;
 		else if (*pResultType == 2)
@@ -653,73 +635,26 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 
 		return 0;
 	}
-	else if (**ppJson == 't')
-	{ ////////////////////////////////////////////////////////// true
-		(*ppJson)++;
-		if (**ppJson != 'r')
-		{
-			return -1;
-		}
-		(*ppJson)++;
-		if (**ppJson != 'u')
-		{
-			return -1;
-		}
-		(*ppJson)++;
-		if (**ppJson != 'e')
-		{
-			return -1;
-		}
-		(*ppJson)++;
+	else if (**ppJson == 't') ///////////////////////////////////////////// true
+	{
+		expect_str("true");
+
 		*pResultType = 6;
 		pResult->outint = 1;
 		return 0;
 	}
-	else if (**ppJson == 'f')
-	{ ///////////////////////////////////////////////////////// false
-		(*ppJson)++;
-		if (**ppJson != 'a')
-		{
-			return -1;
-		}
-		(*ppJson)++;
-		if (**ppJson != 'l')
-		{
-			return -1;
-		}
-		(*ppJson)++;
-		if (**ppJson != 's')
-		{
-			return -1;
-		}
-		(*ppJson)++;
-		if (**ppJson != 'e')
-		{
-			return -1;
-		}
-		(*ppJson)++;
+	else if (**ppJson == 'f') //////////////////////////////////////////// false
+	{
+		expect_str("false");
+
 		*pResultType = 6;
 		pResult->outint = 0;
 		return 0;
 	}
-	else if (**ppJson == 'n')
-	{ ///////////////////////////////////////////////////////// null
-		(*ppJson)++;
-		if (**ppJson != 'u')
-		{
-			return -1;
-		}
-		(*ppJson)++;
-		if (**ppJson != 'l')
-		{
-			return -1;
-		}
-		(*ppJson)++;
-		if (**ppJson != 'l')
-		{
-			return -1;
-		}
-		(*ppJson)++;
+	else if (**ppJson == 'n') ///////////////////////////////////////////// null
+	{ 
+		expect_str("null");
+
 		*pResultType = 7;
 		pResult->outint = 0;
 		return 0;
