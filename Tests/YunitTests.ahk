@@ -9,6 +9,8 @@ SetBatchLines, -1
 #Include JUnit.ahk
 #Include OutputDebug.ahk
 
+MCLib.CompilerPrefix := "C:\TDM-GCC-64\bin\x86_64-w64-mingw32-"
+
 Yunit.Use(YunitStdOut, YunitWindow, YunitJUnit, YunitOutputDebug).Test(LoadsTestSuite, DumpsTestSuite)
 
 class DumpsTestSuite
@@ -132,15 +134,42 @@ class LoadsTestSuite
 		;
 	}
 
-	Test_Invalid_Input_Num()
+	Test_String_Escapes()
 	{
-		input  = [1}
+		input = "\"\\\/\b\f\n\r\t\u1234"
+		expected := """\/`b`f`n`r`t" Chr(0x1234)
+		produced := cJson.Loads(input)
+		Yunit.assert(produced == expected, Format(this.message, expected, produced))
+	}
+
+	Test_Floats()
+	{
+		input = 1.12345
+		expected := 1.12345
+		produced := cJson.Loads(input)
+		Yunit.assert(Abs(produced - expected) < 0.0005, Format(this.message, expected, produced))
+	}
+
+	Test_Invalid_Input_Array()
+	{
+		input = [1}
 		try
 			cJson.Loads(input)
 		catch e
 			pass = pass
 		Yunit.assert(e.message == "Failed to parse JSON (-1,0)", e.message)
 		Yunit.assert(e.extra == "Unexpected character at position 3: '}'", e.extra)
+	}
+
+	Test_Invalid_Input_Special()
+	{
+		input = [trne]
+		try
+			cJson.Loads(input)
+		catch e
+			pass = pass
+		Yunit.assert(e.message == "Failed to parse JSON (-1,0)", e.message)
+		Yunit.assert(e.extra == "Unexpected character at position 4: 'n'", e.extra)
 	}
 
 	Test_Array_Numbers()
