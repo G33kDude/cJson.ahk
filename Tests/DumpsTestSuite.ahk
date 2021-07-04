@@ -90,23 +90,20 @@ class DumpsTestSuite
 		Yunit.assert(produced == expected, Format(this.message, expected, produced))
 	}
 
+	Test_Emoji()
+	{
+		expected =
+		( LTrim Join%A_Space%
+		["\uD83D\uDCCE\uD83D\uDC1F\uD83D\uDC9D\uD83D\uDC24\uD83D\uDD3C\uD83C\uDFE1\uD83D\uDC53
+		\uD83C\uDF69\uD83C\uDF05\uD83C\uDF33\uD83D\uDC14\uD83C\uDFE9\uD83C\uDF4E
+		\uD83D\uDCF5\uD83C\uDF6D\uD83C\uDF16\uD83D\uDD20\uD83C\uDF5A"]
+		)
+		produced := cJson.Dumps(["📎🐟💝🐤🔼🏡👓 🍩🌅🌳🐔🏩🍎 📵🍭🌖🔠🍚"])
+		Yunit.assert(produced == expected, Format(this.message, expected, produced))
+	}
+
 	End()
 	{
 	}
 
-	; Nothing
-
-; com := ComObjCreate("WScript.Shell")
-
-; obj := {80085: 1, -42: 2, "aah": "bbg", 3.3: 4.5, "IE": ie, 5: "5", "emoji": "📎🐟💝🐤🔼🏡👓 🍩🌅🌳🐔🏩🍎 📵🍭🌖🔠🍚 📗🌇🍵🔌💹🕠 🕣🐟🍰🕟🏆🐛 🔈🐎📖👶🌠📁 👻🌴🔼🎭🐣🍰 🔬🍵📛🍪 🌠📇💷🕑 🎋👬🔢🗼🕦 🕀🏁🔊🔛 👙🏠🔃🐹💆 🐗💪🌎🔅🐶📮👧 👄📮💄💜🍠🏇. 🔰👠🎵🌌🌿 🔁📲🍏📴🎧💡 🕐👟🎁🐡 🏡🕣🏤🔊🍆🌑 🐫🍰💱👮🐞 🕃🐠👨👭🍁🕕👉 💑💚💶🐎🏦👗🕡 🔎📠🌋🐁 🌗🐡🎥👆🕑📌🌗📲 👳🎤💆🌓📛💴🎆 🔑📱🔃🍆🐺👊💢 💿📯🐝🍰. 📧🎳🎐📛🎱 🕘🏨🏆🍚🔆🔟🏦 🐳🕐🎷🔐🐆📶 💏🗼📓💄🐻🌓🔘 🍄🎭📗📅🎶 🎱📈💰🍠👹"}
-
-; obj := ["abc"]
-
-; obj := [objTrue, objFalse, objNull]
-; obj := {1: 1, 3: 3 }
-; obj := {(objTrue): "E"}
-
-; obj := {({}): ComObjCreate("WScript.Shell")}
-
-; msgbox, % cJson.Dumps([cJson.True, cJson.False, cJson.Null])
 }
