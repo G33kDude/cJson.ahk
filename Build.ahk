@@ -21,3 +21,6 @@ ahk := RegExReplace(ahk, "m)^#Include.+MCLib.ahk$", FileOpen("Src\Lib\MCLib.ahk\
 ; Save to the Dist folder
 FileCreateDir, Dist
 FileOpen("Dist\cJson.ahk", "w").Write(ahk)
+
+; Test the build
+Run, %A_LineFile%\..\Tests\!TestDist.ahk
