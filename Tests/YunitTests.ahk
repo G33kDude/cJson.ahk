@@ -1,8 +1,8 @@
 #NoEnv
 SetBatchLines, -1
 
-#include ../cJson.ahk
-#include ../Lib/Yunit
+#include %A_LineFile%/../../Src/cJson.ahk
+#include %A_LineFile%/../Lib/Yunit
 #Include Yunit.ahk
 #Include Window.ahk
 #Include StdOut.ahk
