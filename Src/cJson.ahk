@@ -42,10 +42,10 @@ class cJson
 		size := 0
 		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr", 0, "Int*", size
 		, "Ptr", &this.True, "Ptr", &this.False, "Ptr", &this.Null, "CDecl Ptr")
-		VarSetCapacity(buf, size*2+1, 0)
+		VarSetCapacity(buf, size*2+2, 0)
 		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr*", &buf, "Int*", size
 		, "Ptr", &this.True, "Ptr", &this.False, "Ptr", &this.Null, "CDecl Ptr")
-		return StrGet(&buf, size*2, "UTF-16")
+		return StrGet(&buf, size, "UTF-16")
 	}
 
 	Loads(json)
