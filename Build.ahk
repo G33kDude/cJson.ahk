@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 SetBatchLines, -1
 SetWorkingDir, %A_LineFile%
 
@@ -13,10 +13,10 @@ ahk := FileOpen("Src\cJson.ahk", "r").Read()
 
 ; Replace inline compilation with pre-compiled machine code
 mcode := MCLib.AHKFromC(c)
-ahk := RegExReplace(ahk, "`a); MAGIC_STRING\R.+", "this.lib := MCLib.FromString(" mcode ")")
+ahk := RegExReplace(ahk, "`a); MAGIC_STRING\R.+", "this.lib := this.MCLib.FromString(" mcode ")")
 
 ; Replace the MCLib include with the MCLib redistributable
-ahk := RegExReplace(ahk, "m)^#Include.+MCLib.ahk$", FileOpen("Src\Lib\MCLib.ahk\MCLibRedist.ahk", "r").Read())
+ahk := RegExReplace(ahk, "m)^}\s+#Include.+MCLib.ahk$", FileOpen("Src\Lib\MCLib.ahk\MCLibRedist.ahk", "r").Read() "`n}")
 
 ; Update the version string to indicate it's a built version
 ahk := RegExReplace(ahk, "m)^\s*static version.+\K-dev", "-built")
