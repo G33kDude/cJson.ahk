@@ -1,6 +1,8 @@
 ﻿
 class cJson
 {
+	static version := "0.1.0-git-dev"
+
 	_init()
 	{
 		if (this.lib)

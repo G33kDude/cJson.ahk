@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 SetBatchLines, -1
 SetWorkingDir, %A_LineFile%
 
@@ -17,6 +17,9 @@ ahk := RegExReplace(ahk, "`a); MAGIC_STRING\R.+", "this.lib := MCLib.FromString(
 
 ; Replace the MCLib include with the MCLib redistributable
 ahk := RegExReplace(ahk, "m)^#Include.+MCLib.ahk$", FileOpen("Src\Lib\MCLib.ahk\MCLibRedist.ahk", "r").Read())
+
+; Update the version string to indicate it's a built version
+ahk := RegExReplace(ahk, "m)^\s*static version.+\K-dev", "-built")
 
 ; Save to the Dist folder
 FileCreateDir, Dist
