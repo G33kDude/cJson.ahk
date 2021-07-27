@@ -1,10 +1,10 @@
 
-#define MCODE_LIBRARY
-#include "ahk.h"
-typedef uint32_t DWORD;
+#include <MCL.h>
 
 #include <stdint.h>
 #include <stdbool.h>
+
+typedef uint32_t DWORD;
 
 typedef struct Object Object;
 typedef struct Field Field;
@@ -72,7 +72,7 @@ int write_escaped(LPTSTR stronk, LPTSTR *ppszString, DWORD *pcchString);
 		write(str[i]);                \
 	}
 
-MCODE_EXPORT(dumps);
+MCL_EXPORT(dumps);
 int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTrue, Object *pobjFalse, Object *pobjNull)
 {
 
@@ -324,7 +324,7 @@ union OutType
 typedef int fnPush(intptr_t obj, int action, intptr_t value, intptr_t typeValue, intptr_t key, intptr_t typeKey);
 typedef intptr_t fnGetObj(int type);
 
-MCODE_EXPORT(loads);
+MCL_EXPORT(loads);
 int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *pResult, int *pResultType)
 {
 	pResult->outint = 0;

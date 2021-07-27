@@ -9,7 +9,7 @@ class cJson
 			return
 
 		; MAGIC_STRING
-		this.lib := MCLib.FromC(FileOpen(A_LineFile "\..\cJson.c", "r").Read())
+		this.lib := MCL.FromC(FileOpen(A_LineFile "\..\cJson.c", "r").Read())
 
 		this.pfnPush := RegisterCallback(this._Push, "Fast CDecl",, &this)
 		this.pfnGetObj := RegisterCallback(this._GetObj, "Fast CDecl",, &this)
@@ -112,4 +112,4 @@ class cJson
 	}
 }
 
-#Include %A_LineFile%\..\Lib\MCLib.ahk\MCLib.ahk
+#Include %A_LineFile%\..\Lib\MCLib.ahk\MCL.ahk
