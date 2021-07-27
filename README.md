@@ -86,3 +86,7 @@ object.
 * Add a special class to force encoding of indexed arrays as objects.
 * Integrate with a future MCLib-hosted COM-based hash-table style object for
   even greater performance.
+
+---
+
+## [Download cJson.ahk](https://github.com/G33kDude/cJson.ahk/releases)
