@@ -1,6 +1,6 @@
 ﻿#NoEnv
 SetBatchLines, -1
-SetWorkingDir, %A_LineFile%
+SetWorkingDir, %A_LineFile%\..
 
 ; Include the compiler
 #Include %A_LineFile%\..\Src\Lib\MCLib.ahk\MCLib.ahk
