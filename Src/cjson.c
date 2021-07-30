@@ -1,5 +1,6 @@
 
 #include <MCL.h>
+#include "COM.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -300,12 +301,12 @@ int write_dec_int64(int64_t number, LPTSTR *ppszString, DWORD *pcchString)
 // Loads
 ////////////////////////////////////////////////////////////////////////////////
 
-union OutType
-{
-	int64_t outint;
-	double outdub;
-	intptr_t outptr;
-};
+static VARIANT *objTrue;
+MCL_EXPORT_GLOBAL(objTrue);
+static VARIANT *objFalse;
+MCL_EXPORT_GLOBAL(objFalse);
+static VARIANT *objNull;
+MCL_EXPORT_GLOBAL(objNull);
 
 #define skip_whitespace                                                                 \
 	while (**ppJson == ' ' || **ppJson == '\n' || **ppJson == '\r' || **ppJson == '\t') \
@@ -321,14 +322,14 @@ union OutType
 		(*ppJson)++;                  \
 	}
 
-typedef int fnPush(intptr_t obj, int action, intptr_t value, intptr_t typeValue, intptr_t key, intptr_t typeKey);
+typedef int fnPush(intptr_t obj, int action, VARIANT *value, VARIANT *key);
 typedef intptr_t fnGetObj(int type);
 
 MCL_EXPORT(loads);
-int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *pResult, int *pResultType)
+int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, VARIANT *pResult)
 {
-	pResult->outint = 0;
-	*pResultType = 0;
+	pResult->Type = VT_I8;
+	pResult->Integer = 0;
 
 	// Skip over any leading whitespace
 	skip_whitespace;
@@ -344,8 +345,7 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 		// Process key/value pairs
 		while (true)
 		{
-			union OutType tmpKey;
-			int tmpKeyType;
+			VARIANT tmpKey;
 
 			// Break at the end of the object/input
 			skip_whitespace;
@@ -353,7 +353,7 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 				break;
 
 			// Load the pair key into &tmpKey
-			if (loads(pfnPush, pfnGetObj, ppJson, &tmpKey, &tmpKeyType))
+			if (loads(pfnPush, pfnGetObj, ppJson, &tmpKey))
 				return -1;
 
 			// Skip the colon separator or error on unexpected character
@@ -363,12 +363,20 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 			(*ppJson)++;
 
 			// Load the pair value into pResult
-			if (loads(pfnPush, pfnGetObj, ppJson, pResult, pResultType))
+			if (loads(pfnPush, pfnGetObj, ppJson, pResult))
 				return -1;
 
 			// Call the host push function with our key/value pair
-			if ((*pfnPush)(pObj, 5, pResult->outptr, *pResultType, tmpKey.outint, tmpKeyType))
+			if ((*pfnPush)(pObj, 5, pResult, &tmpKey))
 				return -1;
+
+			// Free any allocated BSTRs
+			//if (pResult->Type == VT_BSTR) {
+			//	SysFreeString(pResult->BSTR);
+			//}
+			//if (tmpKey.Type == VT_BSTR) {
+			//	SysFreeString(tmpKey.BSTR);
+			//}
 
 			// Skip the comma separator or break on other character
 			skip_whitespace;
@@ -383,8 +391,8 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 		(*ppJson)++;
 
 		// Yield the object
-		pResult->outptr = pObj;
-		*pResultType = 5;
+		pResult->Type = VT_DISPATCH;
+		pResult->Pointer = (void *)pObj;
 		return 0;
 	}
 	else if (**ppJson == '[') //////////////////////////////////////////////////////////////////////////////////// Array
@@ -404,12 +412,17 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 				break;
 
 			// Load the value into pResult
-			if (loads(pfnPush, pfnGetObj, ppJson, pResult, pResultType))
+			if (loads(pfnPush, pfnGetObj, ppJson, pResult))
 				return -1;
 
 			// Call the host push function with our value
-			if ((*pfnPush)(pObj, 4, pResult->outptr, *pResultType, 0, 0))
+			if ((*pfnPush)(pObj, 4, pResult, 0))
 				return -1;
+
+			// Free any allocated BSTRs
+			//if (pResult->Type == VT_BSTR) {
+			//	SysFreeString(pResult->BSTR);
+			//}
 
 			// Skip the comma separator or break on other character
 			skip_whitespace;
@@ -424,8 +437,8 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 		(*ppJson)++;
 
 		// Yield the array
-		*pResultType = 4;
-		pResult->outptr = pObj;
+		pResult->Type = VT_DISPATCH;
+		pResult->Pointer = (void *)pObj;
 		return 0;
 	}
 	else if (**ppJson == '"') /////////////////////////////////////////////////////////////////////////////////// String
@@ -439,8 +452,8 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 		short *pszOut = *ppJson;
 
 		// Go ahead and set the output pointer before we start advancing pszOut
-		pResult->outptr = (intptr_t)pszOut;
-		*pResultType = 3;
+		pResult->BSTR = pszOut;
+		pResult->Type = VT_BSTR;
 
 		while (**ppJson != '"')
 		{
@@ -525,8 +538,14 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 				*pszOut++ = *(*ppJson)++;
 		}
 
+		// Populate the BSTR size prefix
+		*((uint32_t *)(pResult->BSTR - 2)) = (pszOut - pResult->BSTR) * 2;
+
 		*pszOut = 0; // Null terminate
 		(*ppJson)++; // Pass end quote
+
+		// Allocate a real BSTR per MS documentation
+		//pResult->BSTR = SysAllocString(pResult->BSTR);
 
 		return 0;
 	}
@@ -534,8 +553,8 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 	{
 		// Assume a positive integer, real type checked later
 		int polarity = 1;
-		pResult->outint = 0;
-		*pResultType = 1;
+		pResult->Type = VT_I8;
+		pResult->Integer = 0;
 
 		// Check if negative
 		if (**ppJson == '-')
@@ -547,14 +566,14 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 		// Process the integer portion
 		if (**ppJson == '0') // Just a zero
 		{
-			pResult->outint = 0;
+			pResult->Integer = 0;
 			(*ppJson)++;
 		}
 		else if (**ppJson >= '1' && **ppJson <= '9') // Starts with 1-9
 		{
 			// Process digits 0-9
 			while (**ppJson >= '0' && **ppJson <= '9')
-				pResult->outint = (pResult->outint * 10) + *(*ppJson)++ - '0';
+				pResult->Integer = (pResult->Integer * 10) + *(*ppJson)++ - '0';
 		}
 		else
 		{
@@ -568,15 +587,15 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 			(*ppJson)++;
 
 			// Cast a double from the integer
-			pResult->outdub = pResult->outint;
-			*pResultType = 2;
+			pResult->Double = pResult->Integer;
+			pResult->Type = VT_R8;
 
 			// Process digits 0-9
 			int divisor = 1;
 			while (**ppJson >= '0' && **ppJson <= '9')
 			{
 				divisor *= 10;
-				pResult->outdub += (double)(*(*ppJson)++ - '0') / divisor;
+				pResult->Double += (double)(*(*ppJson)++ - '0') / divisor;
 			}
 		}
 
@@ -587,10 +606,10 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 			(*ppJson)++;
 
 			// Cast the output to double if it was not already cast to double
-			if (*pResultType == 1)
+			if (pResult->Type == VT_I8)
 			{
-				pResult->outdub = pResult->outint;
-				*pResultType = 2;
+				pResult->Double = pResult->Integer;
+				pResult->Type = VT_R8;
 			}
 
 			// Choose to multiply or divide
@@ -622,16 +641,16 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 
 			// Apply the multiplier/divisor
 			if (divide)
-				pResult->outdub /= (double)factor;
+				pResult->Double /= (double)factor;
 			else
-				pResult->outdub *= (double)factor;
+				pResult->Double *= (double)factor;
 		}
 
 		// Apply the polarity modifier
-		if (*pResultType == 1)
-			pResult->outint *= polarity;
-		else if (*pResultType == 2)
-			pResult->outdub *= polarity;
+		if (pResult->Type == VT_I8)
+			pResult->Integer *= polarity;
+		else if (pResult->Type == VT_R8)
+			pResult->Double *= polarity;
 
 		return 0;
 	}
@@ -639,24 +658,24 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, union OutType *p
 	{
 		expect_str("true");
 
-		*pResultType = 6;
-		pResult->outint = 1;
+		pResult->Type = VT_DISPATCH;
+		pResult->Pointer = objTrue;
 		return 0;
 	}
 	else if (**ppJson == 'f') //////////////////////////////////////////// false
 	{
 		expect_str("false");
 
-		*pResultType = 6;
-		pResult->outint = 0;
+		pResult->Type = VT_DISPATCH;
+		pResult->Pointer = objFalse;
 		return 0;
 	}
 	else if (**ppJson == 'n') ///////////////////////////////////////////// null
-	{ 
+	{
 		expect_str("null");
 
-		*pResultType = 7;
-		pResult->outint = 0;
+		pResult->Type = VT_DISPATCH;
+		pResult->Pointer = objNull;
 		return 0;
 	}
 

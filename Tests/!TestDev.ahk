@@ -1,5 +1,6 @@
 #NoEnv
 SetBatchLines, -1
+SetWorkingDir, %A_LineFile%/../../Src/
 
 ; Include Yunit files
 #include %A_LineFile%/../Lib/Yunit

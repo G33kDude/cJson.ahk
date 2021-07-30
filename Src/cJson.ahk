@@ -11,6 +11,11 @@ class cJson
 		; MAGIC_STRING
 		this.lib := MCL.FromC(FileOpen(A_LineFile "\..\cJson.c", "r").Read())
 
+		; Populate globals
+		NumPut(&this.True, this.lib.objTrue+0, "UPtr")
+		NumPut(&this.False, this.lib.objFalse+0, "UPtr")
+		NumPut(&this.Null, this.lib.objNull+0, "UPtr")
+
 		this.pfnPush := RegisterCallback(this._Push, "Fast CDecl",, &this)
 		this.pfnGetObj := RegisterCallback(this._GetObj, "Fast CDecl",, &this)
 	}
@@ -20,17 +25,17 @@ class cJson
 		type := this, this := Object(A_EventInfo)
 		return Object(Object())
 	}
-	
-	_Push(typeObject, value, typeValue, key, typeKey)
+
+	_Push(typeObject, value, key)
 	{
 		pObject := this, this := Object(A_EventInfo)
-		value := this._Value(value, typeValue)
-		
+		value := this._Value(value)
+
 		if (typeObject == 4)
 			ObjPush(Object(pObject), value)
 		else if (typeObject == 5)
-			ObjRawSet(Object(pObject), this._Value(key, typeKey), value)
-		
+			ObjRawSet(Object(pObject), this._Value(key), value)
+
 		return 0
 	}
 
@@ -48,38 +53,39 @@ class cJson
 		return StrGet(&buf, size, "UTF-16")
 	}
 
-	Loads(json)
+	Loads(ByRef json)
 	{
 		this._init()
 
+		_json := " " json ; Prefix with a space to provide room for BSTR prefixes
 		VarSetCapacity(pJson, A_PtrSize)
-		NumPut(&json, &pJson, 0, "Ptr")
+		NumPut(&_json, &pJson, 0, "Ptr")
 
-		if (r := DllCall(this.lib.loads, "Ptr", this.pfnPush, "Ptr", this.pfnGetObj, "Ptr", &pJson, "Int64*", pResult
-			, "Int*", resultType, "CDecl Int")) || ErrorLevel
+		VarSetCapacity(pResult, 24)
+
+		if (r := DllCall(this.lib.loads, "Ptr", this.pfnPush, "Ptr", this.pfnGetObj
+			, "Ptr", &pJson, "Ptr", &pResult , "CDecl Int")) || ErrorLevel
 		{
 			throw Exception("Failed to parse JSON (" r "," ErrorLevel ")", -1
 			, Format("Unexpected character at position {}: '{}'"
-			, (NumGet(pJson)-&json)//2+1, Chr(NumGet(NumGet(pJson), "short"))))
+			, (NumGet(pJson)-&_json)//2, Chr(NumGet(NumGet(pJson), "short"))))
 		}
 
-		return this._Value(pResult, resultType)
+		return this._Value(&pResult)
 	}
-	
-	; type = 1: Integer, 2: Double, 3: String, 4: Array, 5: Object
-	_Value(value, type)
+
+	_Value(value)
 	{
+		; return ComObject(0x400C, value)[]
+		type := NumGet(value+0, "UShort")
 		switch (type)
 		{
-			case 1: return value+0
-			case 2:
-			VarSetCapacity(tmp, 8, 0)
-			NumPut(value, &tmp, "Int64")
-			return NumGet(&tmp, 0, "Double")
-			case 3: return StrGet(value, "UTF-16")
-			case 4, 5: return Object(value), ObjRelease(value)
-			case 6: return value ? this.true : this.false
-			case 7: return this.null
+			case 20: return NumGet(value+A_PtrSize, "UInt64") ; VT_I8
+			case 5: return NumGet(value+A_PtrSize, "Double") ; VT_R8
+			case 8: return StrGet(NumGet(value+A_PtrSize, "Ptr"), "UTF-16") ; VT_BSTR
+			case 9: return Object(NumGet(value+A_PtrSize, "Ptr")), ObjRelease(NumGet(value+A_PtrSize, "Ptr")) ; VT_DISPATCH
+			case 11: return NumGet(value+A_PtrSize, "Int64") ? this.true : this.false ; VT_BOOL
+			case 1: return this.null ; VT_NULL
 		}
 		throw Exception("Rehydration error: " type)
 	}
