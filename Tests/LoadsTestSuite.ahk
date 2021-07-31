@@ -86,6 +86,17 @@ class LoadsTestSuite
 		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
 	}
 
+	Test_Object_Numeric_Keys()
+	{
+		input  = {1: "failure"}
+		try
+			cJson.Loads(input)
+		catch e
+			pass = pass
+		Yunit.assert(e.message == "Failed to parse JSON (-1,0)", e.message)
+		Yunit.assert(e.extra == "Unexpected character at position 2: '1'", e.extra)
+	}
+
 	Test_Object_Strings()
 	{
 		expected := {"key2": "2", "key1": "1"}
