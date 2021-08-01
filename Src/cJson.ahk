@@ -1,4 +1,4 @@
-
+﻿
 class cJson
 {
 	static version := "0.1.0-git-dev"
@@ -7,9 +7,7 @@ class cJson
 	{
 		if (this.lib)
 			return
-
-		; MAGIC_STRING
-		this.lib := MCL.FromC(FileOpen(A_LineFile "\..\cJson.c", "r").Read())
+		this.lib := this._LoadLib()
 
 		; Populate globals
 		NumPut(&this.True, this.lib.objTrue+0, "UPtr")
@@ -18,6 +16,12 @@ class cJson
 
 		this.fnGetObj := Func("Object")
 		NumPut(&this.fnGetObj, this.lib.fnGetObj+0, "UPtr")
+	}
+
+	_LoadLib()
+	{
+		MCL.CompilerSuffix += " -O3" ; Gotta go fast
+		return MCL.FromC(FileOpen(A_LineFile "\..\cJson.c", "r").Read())
 	}
 
 	Dumps(obj)
