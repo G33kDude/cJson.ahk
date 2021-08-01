@@ -691,6 +691,7 @@ int loads(short **ppJson, VARIANT *pResult)
 
 		pResult->vt = VT_DISPATCH;
 		pResult->pdispVal = objTrue;
+		objTrue->lpVtbl->AddRef(objTrue);
 		return 0;
 	}
 	else if (**ppJson == 'f') //////////////////////////////////////////// false
@@ -699,6 +700,7 @@ int loads(short **ppJson, VARIANT *pResult)
 
 		pResult->vt = VT_DISPATCH;
 		pResult->pdispVal = objFalse;
+		objFalse->lpVtbl->AddRef(objFalse);
 		return 0;
 	}
 	else if (**ppJson == 'n') ///////////////////////////////////////////// null
@@ -707,6 +709,7 @@ int loads(short **ppJson, VARIANT *pResult)
 
 		pResult->vt = VT_DISPATCH;
 		pResult->pdispVal = objNull;
+		objNull->lpVtbl->AddRef(objNull);
 		return 0;
 	}
 
