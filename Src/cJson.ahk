@@ -1,4 +1,4 @@
-﻿
+
 class cJson
 {
 	static version := "0.1.0-git-dev"
@@ -16,27 +16,8 @@ class cJson
 		NumPut(&this.False, this.lib.objFalse+0, "UPtr")
 		NumPut(&this.Null, this.lib.objNull+0, "UPtr")
 
-		this.pfnPush := RegisterCallback(this._Push, "Fast CDecl",, &this)
-		this.pfnGetObj := RegisterCallback(this._GetObj, "Fast CDecl",, &this)
-	}
-
-	_GetObj()
-	{
-		type := this, this := Object(A_EventInfo)
-		return Object(Object())
-	}
-
-	_Push(typeObject, value, key)
-	{
-		pObject := this, this := Object(A_EventInfo)
-		value := this._Value(value)
-
-		if (typeObject == 4)
-			ObjPush(Object(pObject), value)
-		else if (typeObject == 5)
-			ObjRawSet(Object(pObject), this._Value(key), value)
-
-		return 0
+		this.fnGetObj := Func("Object")
+		NumPut(&this.fnGetObj, this.lib.fnGetObj+0, "UPtr")
 	}
 
 	Dumps(obj)
@@ -63,31 +44,17 @@ class cJson
 
 		VarSetCapacity(pResult, 24)
 
-		if (r := DllCall(this.lib.loads, "Ptr", this.pfnPush, "Ptr", this.pfnGetObj
-			, "Ptr", &pJson, "Ptr", &pResult , "CDecl Int")) || ErrorLevel
+		if (r := DllCall(this.lib.loads, "Ptr", &pJson, "Ptr", &pResult , "CDecl Int")) || ErrorLevel
 		{
 			throw Exception("Failed to parse JSON (" r "," ErrorLevel ")", -1
 			, Format("Unexpected character at position {}: '{}'"
 			, (NumGet(pJson)-&_json)//2, Chr(NumGet(NumGet(pJson), "short"))))
 		}
 
-		return this._Value(&pResult)
-	}
-
-	_Value(value)
-	{
-		; return ComObject(0x400C, value)[]
-		type := NumGet(value+0, "UShort")
-		switch (type)
-		{
-			case 20: return NumGet(value+A_PtrSize, "UInt64") ; VT_I8
-			case 5: return NumGet(value+A_PtrSize, "Double") ; VT_R8
-			case 8: return StrGet(NumGet(value+A_PtrSize, "Ptr"), "UTF-16") ; VT_BSTR
-			case 9: return Object(NumGet(value+A_PtrSize, "Ptr")), ObjRelease(NumGet(value+A_PtrSize, "Ptr")) ; VT_DISPATCH
-			case 11: return NumGet(value+A_PtrSize, "Int64") ? this.true : this.false ; VT_BOOL
-			case 1: return this.null ; VT_NULL
-		}
-		throw Exception("Rehydration error: " type)
+		result := ComObject(0x400C, &pResult)[]
+		if (IsObject(result))
+			ObjRelease(&result)
+		return result
 	}
 
 	True[]

@@ -305,6 +305,8 @@ static IDispatch *objFalse;
 MCL_EXPORT_GLOBAL(objFalse);
 static IDispatch *objNull;
 MCL_EXPORT_GLOBAL(objNull);
+static IDispatch *fnGetObj;
+MCL_EXPORT_GLOBAL(fnGetObj);
 
 #define skip_whitespace                                                                 \
 	while (**ppJson == ' ' || **ppJson == '\n' || **ppJson == '\r' || **ppJson == '\t') \
@@ -320,11 +322,8 @@ MCL_EXPORT_GLOBAL(objNull);
 		(*ppJson)++;                  \
 	}
 
-typedef int fnPush(intptr_t obj, int action, VARIANT *value, VARIANT *key);
-typedef IDispatch *fnGetObj(int type);
-
 MCL_EXPORT(loads);
-int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, VARIANT *pResult)
+int loads(short **ppJson, VARIANT *pResult)
 {
 	pResult->vt = VT_I8;
 	pResult->llVal = 0;
@@ -338,7 +337,10 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, VARIANT *pResult
 		(*ppJson)++;
 
 		// Get an object from the host script to populate
-		IDispatch *pObj = (*pfnGetObj)(5);
+		DISPPARAMS dispparams = {.cArgs = 0, .cNamedArgs = 0};
+		VARIANT pObjVt;
+		fnGetObj->lpVtbl->Invoke(fnGetObj, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
+		IDispatch *pObj = pObjVt.pdispVal;
 
 		// Process key/value pairs
 		while (true)
@@ -355,7 +357,7 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, VARIANT *pResult
 				return -1;
 
 			// Load the pair key into &tmpKey
-			if (loads(pfnPush, pfnGetObj, ppJson, &tmpKey))
+			if (loads(ppJson, &tmpKey))
 				return -1;
 
 			// Skip the colon separator or error on unexpected character
@@ -365,7 +367,7 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, VARIANT *pResult
 			(*ppJson)++;
 
 			// Load the pair value into pResult
-			if (loads(pfnPush, pfnGetObj, ppJson, pResult))
+			if (loads(ppJson, pResult))
 				return -1;
 
 			// Get the DispID for DISPATCH_PROPERTYPUT
@@ -408,7 +410,10 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, VARIANT *pResult
 		(*ppJson)++;
 
 		// Get an array from the host script to populate
-		IDispatch *pObj = (*pfnGetObj)(4);
+		DISPPARAMS dispparams = {.cArgs = 0, .cNamedArgs = 0};
+		VARIANT pObjVt;
+		fnGetObj->lpVtbl->Invoke(fnGetObj, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
+		IDispatch *pObj = pObjVt.pdispVal;
 
 		// Process values pairs
 		for (unsigned int keyNum = 1;; ++keyNum)
@@ -419,7 +424,7 @@ int loads(fnPush *pfnPush, fnGetObj *pfnGetObj, short **ppJson, VARIANT *pResult
 				break;
 
 			// Load the value into pResult
-			if (loads(pfnPush, pfnGetObj, ppJson, pResult))
+			if (loads(ppJson, pResult))
 				return -1;
 
 			// A buffer large enough to fit the longest int64_t (18446744073709551615) plus null terminator
