@@ -1,69 +1,78 @@
 
 class cJson
 {
-	static version := "0.1.0-git-built"
+	static version := "0.2.0-git-built"
 
 	_init()
 	{
 		if (this.lib)
 			return
+		this.lib := this._LoadLib()
 
-		this.lib := this.MCLib.FromString("V0;__mcode_e_dumps-0,__mcode_e_loads-3437,__size-7328;"
-. "trUAVUiJ5UiD7HAASIlNEEiJVRgATIlFIEyJTShASItFEEiLABBFADhIiwBIOcIPAIS0AAAAx0X8AQAUAOtHSIN9GAAAdC2LRfxImABIjRXlGwAA"
-. "RCgPtgQBYBgBYI1IAAJIi1UYSIkKAGZBD77QZokQBOsPADYgiwCNUAIBARCJEINF/AENBX6lAD8BPoTAdaUJA3pNIAE/SYnISICJweiqCwAAA3FC"
-. "GRBgxwAiAA5duAEBp+kuBgAAxkUk+wADU1AwAwdAIAkA0HVbABgBx0X0hQJoNYQQGItF9IBIAMHgBUgB0EiJTEXQgAuAAVAQgAuDDMABAA0AhZTA"
-. "iEUA+4NF9AGAfftoAHQTARljARQFLXwKsgNWLIIPCEG4W2EBMQZBuHuAAxBgRCKJj1/HRfCCYA4FCwIZhE3wiU3Ig33waAB+XhmMLA8sGRcgCY8L"
-. "D7aAOvABhMDAD4TYAQAAgSDGOnIwAUONgQE1K2dAAchTwA+NecMJRRIcVBLpZvZDUAkT6eLABMolOFXCJbDCq+zMq+zCm0baGfGr7MCrww8GwA/I"
-. "qykRM/YInkUsTBjrG2nUEm0D2xI6vnkBDw+AtkAYPAF1H4MQi8AsahAm4BnpfALCL2FDBQYPhZRAQsUFOYBFKHVpx0XoDC6y6AIm3hcfLg8u6AAu"
-. "TeMHnuAHBS7p9qoOMNWhDuSsDuSiBm2/DrAOVuSgDuMHLakOgKoOOJWhDuCsDuCiBv0Wvw5trw7goA7jB73gB6YOCsGnDkyLTShMoAViCYCLTThI"
-. "iUwkALUUTTABASBhNC76/1j/6dhDZGM0BdU5GqngCumtQmTcrBjcohA2PL8YsBjcoBjjB/wVu01kTRDUQZsfhwsM8AAMY0h9wa0PjNvgHkyuXQ1E"
-. "rn1frkrGSIPEcDxdw8TigCrH4jyTCAQNL5P04XYAFQ+3AGagg/gidWbZHVyVeK1WDpDDC0oOfEoOXF8OJy8HLwfmAukdLwfpCX0qBwgvBy8HLwcv"
-. "B+ICYtgA6aozRyoHljMBJAc+DC8HLwcvBy8H4gJmAKTpNy8H6SMqBwovBw8vBy8HLwfiAm4A6cTbcz4qB7AzASQHDS8HLweHLwcvB+ICcgDpUS8H"
-. "9Ok9KgcJLwcvBy8HLwch4gJ0AOne73vpyiMzASQHH3YNxwB+dr58/wf/B29v7wLgAnXvAnGkBg+3wLhJoEkxjeu6NMMEHs8EYABgAxIvUBkBCEUQ"
-. "YAITDIXAD3iF/Pu1SV8JX04yBJCdQEggR0jRUiNIZolATxCNBbEQEBOJRfAB1bgyD7dFEIPgUA9IicIABPDQoQ8YtgBmMFritWaJVIRF6BECZsHo"
-. "BBEEAYG3g338A37Ix0RF+LA7AOs8AwoiAQ8Ki1X4SGPSDzC3VFXo3w7wWG344aAE+AB5vsVTdwtgaVHHU8ZF/5Bm+EMCfRAQAHkIEAEBSPeCXaGO"
-. "EEi6Z2YDAAJIwA736kiJ0EgIwfgCsBhJwfg/mEwpwJENMQHgAqGvAAHASCnBSInKIInRi0X4sAiJVfD4jVEwkw6AYf8E9ASQSMH5P2ADSCnRswGh"
-. "IhAAdYCAff8YAHQShgRQBMdERbjQLQChDY8RjxFVn3BLjxGAETCFEcSAz9ZFWChIx3ECgTAwkwDr9hKRBEIHUAElsGjhKhEBEcMxIHTe+gAKdM4R"
-. "+gANdL76AAl0rmH6AHsPhY50Tl4GGNK5sHkA/3ESwI8IjwgPjwiPCI8I9AB9D4S6J6RINAFwM4SnIAFMjQxFuIM54BeNVbRIgIlUJCBNicEChAGw"
-. "Lk0Q6Kj+//9AhcB0HLj/AADp/FMNDw3fCt8K3wrfCvQASDp0CrMG5wy/BonOEACaMZkjC4tVQDAuCyz1/SILZASgYASLRSi0SGMQklXQDkUw+5Ce"
-. "wQBFwJ4BBsAvcZ5xBBpMcEe6kRngk0H/0h13D1u/CH8Pfw+LRfO0ACBIiwAPtwBmAIP4DXS+SItFEQfwCXSuCngsdRchBDxIjVACAiiJEEDp3/3/"
-. "/5AKTn0QdAq4/wAA6ccLDAAAD2IADChIi1UCwAMUMMcABQAAxAC4AAMA6ZYHMANKIFsPhd8BFEQYuQIEADP/0EiJRciM6xISIgdIIHTeCg8YCnTO"
-. "Cg+dfV0PhAYLB0SBCYXAD4T4lQBATAJnTQALRRgAawAwSIlUJCBNiYDBSYnISInCgAwAEOgG/P//hcAphYqxCoIjMABWY8gDA4aBVchIx0QkKAsB"
-. "gwEEIAEETItVEIBJiclJidC6AXVASInBQf/SACQcnQMkaAMkWXuTfKL+jXzyXQU31AnUJMB5wjADfzWARhCDfKMHDIMSIg/YhegDGDaAe/hAEMAA"
-. "x0AShRYADADpeIcNA2gKdQQlP80YXA+FJzvZGEQidYAqABuBB4lVIPhmxwAikAzpAZeLHUAXzg1c0Q3JAswNqi/ODS/RDZHNDWLODaoI0Q1ZzQ1m"
-. "zg0M8QaqIe0Gbu4GCvEG6etlqIP4cu4GDfEGse0GKnTuBgnxBnntBnUPDIU3lYehCAAAx0Uq9IJQ/yNT+OAGweCOBKF2AASsQS9+NuoBODl/JkQG"
-. "4gUEAwHQyIPoMAYI6ZADC6cGiEB+M+oBRn8jtAhSN6YI601KBmBMCGZNVghXRwgkYTUG8SGDAEX0AYN99AMPBI73IHtIg0X4AhTrLgMGBAYGEEiN"
-. "qkoEBgjDMUjAMU3gDvYSTSVAeHRAnsYsLw5jf2anIL8KBy10IT1oLg+EjtetazkPj8NgAnjHRfBgO+OJYQxjqsfmAIQCaAp1GWAFgRncfVgwdSKr"
-. "CQ1MjU0LMER+ckxCYus+JbqJANBIweACSAHQwEgBwEmJwOYJoCYUi1XgCQpgBkgPv9DATAHAgAzQx5lJTtIc6wt+ogU5bICpS7AwLg+FsvIWAxIA"
-. "ZoAP78DySA8qIRFwKPIPEeQlgHuwFOwBYRPrVYtV7InQAVALAdABwIlF7Hs/C6AGmAAusgSgBHAA0gFwAFXsZg8oyPIID17KswUQAPIPHFjBeAYp"
-. "DSsOOX6LEfoAZXQU+gBFD4UGfz88dF+LAIP4AUdUGw8OCA7GRetNIRg1MAEBbwXrQT13Ait1vha4A58jTw1DDVQaxsAHCMdF5PEk6y6LVVrkxhVB"
-. "DyHGFUSxF+RDDwYKBrLHReAxG8eERdzSBROLVeCoGwDgg0XcAYtF3AA7ReR85YB961gAdB+lGWASyTAbTabg8Bo2Gusd5AEIpB1aReABWSkcxBYZ"
-. "5C2LgEXwSJhID691K6brgTsyAgJ1vgTwuQSFoz+sT15/x0XYsgwQQ4tF2MAFjRWrAUACD7YEEGYPvtNxBsUCOcLVhmavIeJMFtiwDyMEaCQEhMB1"
-. "vqnzIABNVUMBFOMIHe0IqmbhCNTlCNSyBCHvCG3rCNf/N+II1OAIIwTeLxAC7whoR+MIjp1GbnUQecdF0OIIQItFWtCyBJi0BO8IB+II62JLvwiD"
-. "RdCwCPMDWBW3CKyzCAe/CADrBQHCBEiD7IBdw5ABAAAiVW5rbm93AG5fT2JqZWN0CF8AIoUAdHJ1ZQAAZmFsc2UAbhB1bGwAlgJWYWwAdWVfADAx"
-. "MjMANDU2Nzg5QUIQQ0RFRkIGAEdDAEM6ICh0ZG02ADQtMSkgMTAuGDMuMKMBAgA=")
+		; Populate globals
+		NumPut(&this.True, this.lib.objTrue+0, "UPtr")
+		NumPut(&this.False, this.lib.objFalse+0, "UPtr")
+		NumPut(&this.Null, this.lib.objNull+0, "UPtr")
 
-		this.pfnPush := RegisterCallback(this._Push, "Fast CDecl",, &this)
-		this.pfnGetObj := RegisterCallback(this._GetObj, "Fast CDecl",, &this)
+		this.fnGetObj := Func("Object")
+		NumPut(&this.fnGetObj, this.lib.fnGetObj+0, "UPtr")
 	}
 
-	_GetObj()
-	{
-		type := this, this := Object(A_EventInfo)
-		return Object(Object())
-	}
-	
-	_Push(typeObject, value, typeValue, key, typeKey)
-	{
-		pObject := this, this := Object(A_EventInfo)
-		value := this._Value(value, typeValue)
-		
-		if (typeObject == 4)
-			ObjPush(Object(pObject), value)
-		else if (typeObject == 5)
-			ObjRawSet(Object(pObject), this._Value(key, typeKey), value)
-		
-		return 0
+	_LoadLib() {
+		static CodeBase64 := ""
+		. "yrUAVUiJ5UiD7HAASIlNEEiJVRgATIlFIEyJTShASItFEEiLABBFADhIiwBIOcIPAIS0AAAAx0X8AQAUAOtHSIN9GAAAdC2LRfxImABIjRW1HAAA"
+		. "RCgPtgQBYBgBYI1IAAJIi1UYSIkKAGZBD77QZokQBOsPADYgiwCNUAIBARCJEINF/AENBX51AD8BPoTAdaUJA3pNIAE/SYnISLCJweimAB4DcRkQ"
+		. "YFDHACIADl24AafpAC4GAADGRfsASQNTUDADB0AgANB1QlsAGAHHRfQCaDUhhBAYi0X0gEjB4AAFSAHQSIlF0BOAC4ABUBCAC4PAAQMADQCFlMCI"
+		. "RfuDAEX0AYB9+wB0mhMBGWMBFAUtfLIDVkIsgg8IQbhbATEGmEG4e4ADEGBEiY9fyMdF8IJgDgUCGYRNAvCJTciDffAAflpeGYwsDywZFyCPCw8C"
+		. "toA68AGEwA+EsNgBAACBIMY6MAFD3I2BATUrZ0AByMAPjXmUvxpFEhxUEun2Q1BZCRPp4sAEyiU4wiWw1cKr7Myr7MKbFkAa76tm7MCrww/WGcqr"
+		. "ETPyS4AInEUsTBjrG9QSxhsGRtMSOr55AQ8PtkDgGDwBdR+DEMAsahBiIuAZ6XwCwi9DBQYYD4WUQELFBTlFKKB1acdF6Awu6AImbK4YHy4PLugA"
+		. "LuMHblPgBwUu6faqDjChDuS1rA7kogY9vw6wDuSgDqnjB/0XqA6Aqg44oQ7q4KwO4KIGzaAGvw6tDlbgoA7jB42pDgqnDkwwi00oTKAFYgmLTSA4"
+		. "SIlMJAC1TTAFAQEgYTQu+v//6VbYQ2RjNAXVOXNAI+mqrUJk3KwY3KIQDL8YzbAY3KAY4wfMFk1kTRDu0CAEH4cMDPAADEh9wa1YD4zb4B5Mrl1E"
+		. "rn0DX65KxkiDxHBdww6QBQBBAgkAVUiB7ELAQTKNrCSAwQWJ08AHwQCVWAI1hcEAYBfCFGUBSMdACOIrIBD2hUIFARFQABGjAUFv5QIAD7cAZoP4"
+		. "IHQi1U0CCnTCTQINdCKvTQIJdJxNAnsPGIU3BOISUw/HhdA/hA2gAIEjpACCLZITBfpO/rAVwSfRcwXs0QDHiEQkQIMCRCQ4ggAEjZXRVkiJVCQw"
+		. "V7AAMQWxACjwASCQBgBUQblRAkECFroCA4kwwUH/0oAIIQFIif6FsW4fEh8SHxIfEh8SHxJhJwF9D4S4Qk1pAYUF0G6iXgGD+CJ0CkS4/wAA6YcT"
+		. "QQ+FGeEhSImQB0Ig6N/9QP//hcB0IjMCY/8xAh8NHw0fDR8NHw0fDSQB8jpFCuISDwgICNIpxwsWIsMLtAOmsAPHhYwXZiASGmMgKIUPjUgIuYUB"
+		. "jZWhAjYf0h65kR8joD4JH8dFcIMjRXjPlCZBNCQGAwlFcEMB0QN5egcwi0MGNAFPKIAAMP3TKE3wrLBRoQjQL+onlieT0QY0FHU81QeLQCANDWAA"
+		. "UAYSEQGJwf/Sf98pvxy/HL8cvxy/HCcBLAx1HW8HYwfpzPz/zP+Q7iwFHOUQzx/MHyVgSgl2F4uVUhWJUBoIk7Ol+gPDBVsPhUzhA28F10RFUNQd"
+		. "WLV0AGBERLUBWkZEp9EAmf8bjVWQbBJEVVDvQyPvQ8LJiYX4QWyFPP+AArECfxp/Gn8afxp/Gn8aYScBXQ+Eal9EUERUk1MBvDa2+bk2Og+xGIxF"
+		. "+lCsYgyJhThQAKjHhTRQABWxrY3xAACJyrjNzMzMSAAPr8JIweggiQDCweoDidDB4AACAdABwCnBiQDKidCDwDCDrSFRAwGJwoviA0iYQGaJVEXQ"
+		. "ixIFiSLCGgTB6AOTBoO9gVEAAHWXx0Us0RXppQNIjVBsjeDP0saQe4+iFkZAsXwTAY1VLK8/+68/xGVF8nBwABAmeT+QiOYQRD93BjCLsAUEAR8j"
+		. "+RY/iekPPw8/Dz8PPw8/f48kjySPJI8kjySPJAA/JMtvB2MHgzMu6RqAWn4/cl3FJO0MDzp/P3Y/sLUASIuV+AAAAEgQiVAIuABwAOmtQgwAaIuF"
+		. "UAEBMAAAD7cAZoP4Ig8IhRMFCVhIjVACiQU0iRAILomFKAISdIVYAgyVAhoAtgQiZoDHAAgA6VkEDcRAhcB1Crj/AADpgi4QflwPhfYDIX65BK11"
+		. "NAASAnkBJ4kChOUAeSIWQenHCi+EOhQjqlwXI4AQIy8UIy8XIyo5ECNiFCMIFyPyAlUPI2YUIwyXEauQEW5VlBEKlxFkkBFylBENVZcRHZARdJQR"
+		. "CZcR1sNDqYoRdQ+FhYoFjpnBxBUAAMeFJIACwssOO4MMgQaAEcHgBIlGwkUKj6YvfkKNBDkcfy+HD8IOhwcB0INk6DDJE+muwepMEEBEfj+NBEZ/"
+		. "LBoVN6kJFetczQdgLwpmPAqmVyoKhHlhCNcpg0IoCAGDvcEAAw+OuCD+//9IgyIIAusKOuMHIekHEEiNSlfnByGKIz5IID6NAxMSs1AuYJeQ+0AL"
+		. "RZJIJgcYKchIghbjAkAISDiD6ATLPHUXI6WDBxFvMS10Lm4+D47wIw6e4D4Pj9nAAseFLiDBIIMNRKQUBqjHQPMgILAMdSLjBqEk36KDBjwwdSE4"
+		. "0wpNfnAOMA8EjonQAjl/dutMA4YoAL2J0EjB4AIASAHQSAHASYmmwGkMIDWLlWMMCqAHgEgPv8BMAcBgDy7QBQgjxUxmH24Ofo4VJUz/wNKQ7QMu"
+		. "D4UG5tgbSD5mD+/A8hhIDyrBFGEC8g8RK+BABjEFwDMcxDPrbCSLlWEBidDAGwHQ2AHAiUID+BuYgHcCDBvgC+AA0uAAIghmDyggyPIPXspmDhBA"
+		. "YAjyD1jBbBCsIBeZD0iOaso/wwJldC4FcEUPhfgbm3EHswIUx1ci/xH/EcaFG7QrDCqaIZMBAU8HQwfrMj0DuCt1H94EHy1LEROvIUWEIeYwdMeF"
+		. "FFRa69g6i5WxAMYbQZ8pnBseRBEeMQNfB18HfqDHRIUQhCLHhQxVBxxci5VRASgj4QCDAgIBCotiADsyBnzWgL1Zog90Klkh4BfJUCONp1EDECMa"
+		. "IusolwJIgxrEDyryBfIPWb0k+R0KJNg6i1JESJhID5KvOTjrODoDBXW/Bi+wBqEDvQaTUWlPevh0KA+Ft9IRCNURUosjsgDQB40VjxADD7ZgBBBm"
+		. "D76BCJgDOfTCdCQdE1oF3WShBDAVhRYFPRQFhMB1lxcrzSGBFcQwF0cF5jQFAUyIiwXYggHB/9LTDNKbTyD4ZtUMBNgMsQDdsgfGoRPfDNoMRR85"
+		. "2Aw3oQTQDBYFdBQF3wwVCrfeDAK91gzq4r3WDM3vOuD4bg+FsdIMAizRDOxPi7IAsgf+AAHfDNQM8gfSDOt6rwylDHEEoAyt5gSv5ASgDJqsDE9n"
+		. "cJWkDD2qDC+qDOsFsgcQSIHEwAADXcOQHwEA8wsPAA8AAwAiVW4Aa25vd25fT2KAamVjdF8AIoUAAHRydWUAZmFsgHNlAG51bGyXAgBWYWx1ZV8A"
+		. "MAAxMjM0NTY3OIA5QUJDREVG8wQAVUiJ5UiD7DAASIlNEEiJVRgATIlFIMZF/wAEx0VRGQBIg30QCAB5CBABAUj3XSMQTVACumdmAwBIiRDISPfq"
+		. "EnT4AkkAichJwfg/TCkGwFGKWXVIKcFIiQDKidCNSDCLRQD4jVABiVX4iYDKSJhmiVRFABpDHwUUBUjB+T+AA0hAKdBIiUUQkggPBIV6EBSAff8A"
+		. "dAYStgSQBMdERdAtgACDbfgB6zyAAgAYAHQiSItFGCm2UlUYgFKLoAJj0qAPt1RV0DGfDxACeCCLADAEgQCQH9ADgyB9+AB5vtIaSINsxDAwGvQR"
+		. "IPkREwYcMx8GQtvpCNKTugXp9Kki0kUQFd9mMwQZPwRvEtvOCS8HKgeQ4wUqB3x9KgdcLwcvBy8HLwfkAunSHS8H6QkqBwgvBy8Hhy8HLwfiAmIA"
+		. "6aogUnKxAEiLRSCLAI1QAgEBgIkQ6ZYCAAIAAFAQD7cAZoMA+Ax1ZkiDfRgIAHQZAEwYSIsAAEiNSAJIi1UYAEiJCmbHAFwALOsPDIADXBwSXGYA"
+		. "rOk3A7wK5CMKcgpKcqBuAOnEAQ9ysAMThQRyDUo5cgDpURA5Cj0KOQlKOXQA6d4aAA85yoMJBDkffg2xBwZ+fnyyP5MLdZALAYMaD7fASItNIAGB"
+		. "CkmJyInB6IzpwCTrNAMTHg8TgAGADZASZokQECBFEIAJAUMwhcAPhfz7/wr/WSUiTyWQSIPEECBdw5AHAFVIiQDlSIPsIInISACJVRhMiUUgZgCJ"
+		. "RRBIjQUd+oFAF4lF8MdF/IAsAADrMg+3RRCDIOAPSInCwBLwSAAB0A+2AGYPvgDQi0X8SJhmiQhURehBCGbB6AQBQRCDRfwBg338gAN+yMdF+AMB"
+		. "EAI/wyoli0X4SJhARA+3REXojy1ERInC0T6DbfhAE/gwAHm7uAEjSDE="
+		static Code := false		if ((A_PtrSize * 8) != 64) {
+			Throw Exception("_LoadLib does not support " (A_PtrSize * 8) " bit AHK, please run using 64 bit AHK")
+		}		; MCL standalone loader https://github.com/G33kDude/MCLib.ahk
+		; Copyright (c) 2021 G33kDude, CloakerSmoker (CC-BY-4.0)
+		; https://creativecommons.org/licenses/by/4.0/		if (!Code) {
+			if !DllCall("Crypt32\CryptStringToBinary", "Str", CodeBase64, "UInt", 0, "UInt", 1, "UPtr", 0, "UInt*", CompressedSize, "Ptr", 0, "Ptr", 0, "UInt")
+				throw Exception("Failed to parse MCLib b64 to binary")			CompressedSize := VarSetCapacity(DecompressionBuffer, CompressedSize, 0)			if !DllCall("Crypt32\CryptStringToBinary", "Str", CodeBase64, "UInt", 0, "UInt", 1, "Ptr", &DecompressionBuffer, "UInt*", CompressedSize, "Ptr", 0, "Ptr", 0, "UInt")
+				throw Exception("Failed to convert MCLib b64 to binary")			if !(pCode := DllCall("GlobalAlloc", "UInt", 0, "Ptr", 9152, "Ptr"))
+				throw Exception("Failed to reserve MCLib memory")			if (DllCall("ntdll\RtlDecompressBuffer", "UShort", 0x102, "Ptr", pCode, "UInt", 9152, "Ptr", &DecompressionBuffer, "UInt", CompressedSize, "UInt*", DecompressedSize, "UInt"))
+				throw Exception("Error calling RtlDecompressBuffer",, Format("0x{:08x}", r))			if !DllCall("VirtualProtect", "Ptr", pCode, "Ptr", 9152, "UInt", 0x40, "UInt*", OldProtect, "UInt")
+				Throw Exception("Failed to mark MCLib memory as executable")			Exports := {}			for ExportName, ExportOffset in {"dumps": 0, "fnGetObj": 1824, "loads": 1840, "objFalse": 7376, "objNull": 7392, "objTrue": 7408} {
+				Exports[ExportName] := pCode + ExportOffset
+			}			Code := Exports		}		return Code
 	}
 
 	Dumps(obj)
@@ -80,40 +89,27 @@ class cJson
 		return StrGet(&buf, size, "UTF-16")
 	}
 
-	Loads(json)
+	Loads(ByRef json)
 	{
 		this._init()
 
+		_json := " " json ; Prefix with a space to provide room for BSTR prefixes
 		VarSetCapacity(pJson, A_PtrSize)
-		NumPut(&json, &pJson, 0, "Ptr")
+		NumPut(&_json, &pJson, 0, "Ptr")
 
-		if (r := DllCall(this.lib.loads, "Ptr", this.pfnPush, "Ptr", this.pfnGetObj, "Ptr", &pJson, "Int64*", pResult
-			, "Int*", resultType, "CDecl Int")) || ErrorLevel
+		VarSetCapacity(pResult, 24)
+
+		if (r := DllCall(this.lib.loads, "Ptr", &pJson, "Ptr", &pResult , "CDecl Int")) || ErrorLevel
 		{
 			throw Exception("Failed to parse JSON (" r "," ErrorLevel ")", -1
 			, Format("Unexpected character at position {}: '{}'"
-			, (NumGet(pJson)-&json)//2+1, Chr(NumGet(NumGet(pJson), "short"))))
+			, (NumGet(pJson)-&_json)//2, Chr(NumGet(NumGet(pJson), "short"))))
 		}
 
-		return this._Value(pResult, resultType)
-	}
-	
-	; type = 1: Integer, 2: Double, 3: String, 4: Array, 5: Object
-	_Value(value, type)
-	{
-		switch (type)
-		{
-			case 1: return value+0
-			case 2:
-			VarSetCapacity(tmp, 8, 0)
-			NumPut(value, &tmp, "Int64")
-			return NumGet(&tmp, 0, "Double")
-			case 3: return StrGet(value, "UTF-16")
-			case 4, 5: return Object(value), ObjRelease(value)
-			case 6: return value ? this.true : this.false
-			case 7: return this.null
-		}
-		throw Exception("Rehydration error: " type)
+		result := ComObject(0x400C, &pResult)[]
+		if (IsObject(result))
+			ObjRelease(&result)
+		return result
 	}
 
 	True[]
@@ -142,109 +138,5 @@ class cJson
 			return _
 		}
 	}
-;
-; MCLib.ahk redistributable pre-release
-; https://github.com/G33kDude/MCLib.ahk
-;
-; Copyright (c) 2021 G33kDude, CloakerSmoker (CC-BY-4.0)
-; https://creativecommons.org/licenses/by/4.0/
-;
-
-class MClib {
-	class LZ {
-		Decompress(pCData, cbCData, pData, cbData) {
-			if (r := DllCall("ntdll\RtlDecompressBuffer"
-				, "UShort",  0x102 ; USHORT CompressionFormat
-				, "Ptr", pData     ; PUCHAR UncompressedBuffer
-				, "UInt", cbData   ; ULONG  UncompressedBufferSize
-				, "Ptr", pCData    ; PUCHAR CompressedBuffer
-				, "UInt", cbCData  ; ULONG  CompressedBufferSize,
-				, "UInt*", cbFinal ; PULONG FinalUncompressedSize
-				, "UInt")) ; NTSTATUS
-				throw Exception("Error calling RtlDecompressBuffer",, Format("0x{:08x}", r))
-			
-			return cbFinal
-		}
-	}
-
-	Load(pCode, CodeSize, Symbols) {
-		for SymbolName, SymbolOffset in Symbols {
-			if (RegExMatch(SymbolName, "O)__mcode_i_(\w+?)_(\w+)", Match)) {
-				DllName := Match[1]
-				FunctionName := Match[2]
-
-				hDll := DllCall("GetModuleHandle", "Str", DllName, "Ptr")
-
-				if (ErrorLevel || A_LastError) {
-					Throw "Could not load dll " DllName ", ErrorLevel " ErrorLevel ", LastError " Format("{:0x}", A_LastError) 
-				}
-
-				pFunction := DllCall("GetProcAddress", "Ptr", hDll, "AStr", FunctionName, "Ptr")
-
-				if (ErrorLevel || A_LastError) {
-					Throw "Could not find function " FunctionName " from " DllName ".dll, ErrorLevel " ErrorLevel ", LastError " Format("{:0x}", A_LastError) 
-				}
-
-				NumPut(pFunction, pCode + 0, SymbolOffset, "Ptr")
-			}
-		}
-		
-		if !DllCall("VirtualProtect", "Ptr", pCode, "Ptr", CodeSize, "UInt", 0x40, "UInt*", OldProtect, "UInt")
-			Throw Exception("Failed to mark MCLib memory as executable")
-		
-		Exports := {}
-
-		for SymbolName, SymbolOffset in Symbols {
-			if (RegExMatch(SymbolName, "O)__mcode_e_(\w+)", Match)) {
-				Exports[Match[1]] := pCode + SymbolOffset
-			}
-		}
-
-		if (Exports.Count()) {
-			return Exports
-		}
-		else {
-			return pCode + Symbols["__main"]
-		}
-	}
-
-	FromString(Code) {
-		Parts := StrSplit(Code, ";")
-
-		if (Parts[1] != "V0") {
-			Throw "Unknown MClib packed code format"
-		}
-
-		Symbols := {}
-
-		for k, SymbolEntry in StrSplit(Parts[2], ",") {
-			SymbolEntry := StrSplit(SymbolEntry, "-")
-
-			Symbols[SymbolEntry[1]] := SymbolEntry[2]
-		}
-
-		CodeBase64 := Parts[3]
-
-		DecompressedSize := Symbols.__Size
-
-		if !DllCall("Crypt32\CryptStringToBinary", "Str", CodeBase64, "UInt", 0, "UInt", 1
-			, "UPtr", 0, "UInt*", CompressedSize, "Ptr", 0, "Ptr", 0, "UInt")
-			throw Exception("Failed to parse MCLib b64 to binary")
-		
-		CompressedSize := VarSetCapacity(DecompressionBuffer, CompressedSize, 0)
-		pDecompressionBuffer := &DecompressionBuffer
-
-		if !DllCall("Crypt32\CryptStringToBinary", "Str", CodeBase64, "UInt", 0, "UInt", 1
-			, "Ptr", pDecompressionBuffer, "UInt*", CompressedSize, "Ptr", 0, "Ptr", 0, "UInt")
-			throw Exception("Failed to convert MCLib b64 to binary")
-		
-		if !(pBinary := DllCall("GlobalAlloc", "UInt", 0, "Ptr", DecompressedSize, "Ptr"))
-			throw Exception("Failed to reserve MCLib memory")
-
-		this.LZ.Decompress(pDecompressionBuffer, CompressedSize, pBinary, DecompressedSize)
-		
-		return this.Load(pBinary, DecompressedSize, Symbols)
-	}
 }
 
-}
