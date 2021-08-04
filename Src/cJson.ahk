@@ -21,7 +21,7 @@ class cJson
 	_LoadLib()
 	{
 		MCL.CompilerSuffix += " -O3" ; Gotta go fast
-		return MCL.FromC(FileOpen(A_LineFile "\..\cJson.c", "r").Read())
+		return MCL.FromC("#include ""dumps.c""`n#include ""loads.c""")
 	}
 
 	Dumps(obj)
