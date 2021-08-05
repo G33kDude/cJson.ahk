@@ -113,6 +113,25 @@ class LoadsTestSuite
 		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
 	}
 
+	Test_Data_Types()
+	{
+		expected := [1, 2147483649, 0.1, "a"]
+		produced  = [1, 2147483649, 0.1, "a"]
+		produced := cJson.Loads(produced)
+		Yunit.assert(ObjGetCapacity(produced, 1) == "", "1 decoded as string")
+		Yunit.assert(ObjGetCapacity(produced, 2) == "", "2147483649 decoded as string")
+		Yunit.assert(ObjGetCapacity(produced, 3) == "", "0.1 decoded as string")
+		Yunit.assert(ObjGetCapacity(produced, 4) != "", """a"" not decoded as string")
+	}
+
+	Test_Big_Ints()
+	{
+		expected := [2147483649, {-1: 2147483649, 0: 2147483649, 1: 2147483649, "a": 2147483649}]
+		produced  = [2147483649, {"-1": 2147483649, "0": 2147483649, "1": 2147483649, "a": 2147483649}]
+		produced := cJson.Loads(produced)
+		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
+	}
+
 	End()
 	{
 		;

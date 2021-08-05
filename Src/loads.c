@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "ahk.h"
+
 #define NULL 0
 
 static IDispatch *objTrue;
@@ -17,6 +19,8 @@ static IDispatch *objNull;
 MCL_EXPORT_GLOBAL(objNull);
 static IDispatch *fnGetObj;
 MCL_EXPORT_GLOBAL(fnGetObj);
+static bool BIGINTS_AS_FLOATS = 0;
+MCL_EXPORT_GLOBAL(BIGINTS_AS_FLOATS);
 
 #define skip_whitespace                                                                 \
 	while (**ppJson == ' ' || **ppJson == '\n' || **ppJson == '\r' || **ppJson == '\t') \
@@ -31,6 +35,53 @@ MCL_EXPORT_GLOBAL(fnGetObj);
 			return -1;                \
 		(*ppJson)++;                  \
 	}
+
+void comobjset(IDispatch *pObj, BSTR key, VARIANT *value)
+{
+	// Get the DispID for DISPATCH_PROPERTYPUT
+	DISPID dispid = 0;
+	pObj->lpVtbl->GetIDsOfNames(pObj, NULL, &key, 1, 0, &dispid);
+
+	// Set the property
+	DISPPARAMS dispparams = {
+		.cArgs = 1,
+		.cNamedArgs = 0,
+		.rgvarg = value};
+	pObj->lpVtbl->Invoke(pObj, dispid, NULL, 0, DISPATCH_PROPERTYPUT, &dispparams, NULL, NULL, NULL);
+
+	// Decrement the reference count of the object given by pfnGetObj
+	if (value->vt == VT_DISPATCH)
+	{
+		value->pdispVal->lpVtbl->Release(value->pdispVal);
+	}
+	else if (value->vt == VT_I4 && value->llVal > 2147483647) // Fix integer overflow
+	{
+		Field *field;
+		if (obj_get_field_str((Object *)pObj, key, &field))
+		{
+			field->iValue = value->llVal;
+		}
+	}
+}
+
+void comobjset_i(IDispatch *pObj, unsigned int key, VARIANT *value)
+{
+	// A buffer large enough to fit the longest uint64_t (18446744073709551615) plus null terminator
+	short str[21];
+	str[21] = 0;
+
+	unsigned int n = key;
+
+	// Extract the decimal values
+	int i = 21;
+	do
+	{
+		str[--i] = (short)(key % 10 + '0');
+		key /= 10;
+	} while (key != 0);
+
+	comobjset(pObj, &str[i], value);
+}
 
 MCL_EXPORT(loads);
 int loads(short **ppJson, VARIANT *pResult)
@@ -80,22 +131,7 @@ int loads(short **ppJson, VARIANT *pResult)
 			if (loads(ppJson, pResult))
 				return -1;
 
-			// Get the DispID for DISPATCH_PROPERTYPUT
-			DISPID dispid = 0;
-			pObj->lpVtbl->GetIDsOfNames(pObj, NULL, &tmpKey.bstrVal, 1, 0, &dispid);
-
-			// Set the property
-			DISPPARAMS dispparams = {
-				.cArgs = 1,
-				.cNamedArgs = 0,
-				.rgvarg = pResult};
-			pObj->lpVtbl->Invoke(pObj, dispid, NULL, 0, DISPATCH_PROPERTYPUT, &dispparams, NULL, NULL, NULL);
-
-			// Decrement the reference count of the object given by pfnGetObj
-			if (pResult->vt == VT_DISPATCH)
-			{
-				pResult->pdispVal->lpVtbl->Release(pResult->pdispVal);
-			}
+			comobjset(pObj, tmpKey.bstrVal, pResult);
 
 			// Skip the comma separator or break on other character
 			skip_whitespace;
@@ -137,36 +173,7 @@ int loads(short **ppJson, VARIANT *pResult)
 			if (loads(ppJson, pResult))
 				return -1;
 
-			// A buffer large enough to fit the longest int64_t (18446744073709551615) plus null terminator
-			short keystring[21];
-			keystring[21] = 0;
-
-			// Extract the decimal values
-			unsigned int number = keyNum;
-			int keyi = 21;
-			do
-			{
-				keystring[--keyi] = (short)(number % 10 + '0');
-				number /= 10;
-			} while (number != 0);
-
-			// Get the DispID for DISPATCH_PROPERTYPUT
-			DISPID dispid = 0;
-			short *ptr = keystring + keyi;
-			pObj->lpVtbl->GetIDsOfNames(pObj, NULL, &ptr, 1, 0, &dispid);
-
-			// Set the property
-			DISPPARAMS dispparams = {
-				.cArgs = 1,
-				.cNamedArgs = 0,
-				.rgvarg = pResult};
-			pObj->lpVtbl->Invoke(pObj, dispid, NULL, 0, DISPATCH_PROPERTYPUT, &dispparams, NULL, NULL, NULL);
-
-			// Decrement the reference count of the object given by pfnGetObj
-			if (pResult->vt == VT_DISPATCH)
-			{
-				pResult->pdispVal->lpVtbl->Release(pResult->pdispVal);
-			}
+			comobjset_i(pObj, keyNum, pResult);
 
 			// Skip the comma separator or break on other character
 			skip_whitespace;
@@ -392,6 +399,13 @@ int loads(short **ppJson, VARIANT *pResult)
 			pResult->llVal *= polarity;
 		else if (pResult->vt == VT_R8)
 			pResult->dblVal *= polarity;
+
+		// AHK workaround for setting pure integer values
+		// Native object code will fix any overflow problems
+		if (pResult->vt == VT_I8)
+		{
+			pResult->vt = VT_I4;
+		}
 
 		return 0;
 	}
