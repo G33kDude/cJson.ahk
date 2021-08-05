@@ -54,7 +54,7 @@ void comobjset(IDispatch *pObj, BSTR key, VARIANT *value)
 	{
 		value->pdispVal->lpVtbl->Release(value->pdispVal);
 	}
-	else if (value->vt == VT_I4 && value->llVal > 2147483647) // Fix integer overflow
+	else if (value->vt == VT_I4 && (value->llVal > 2147483647 || value->llVal < -2147483648)) // Fix integer overflow
 	{
 		Field *field;
 		if (obj_get_field_str((Object *)pObj, key, &field))
