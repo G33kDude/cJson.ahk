@@ -8,8 +8,7 @@ performance.
 
 This library is compatible *ONLY* with AutoHotkey v1.1 U64.
 
-32-bit support is dependent on 32-bit support of the underlying MCLib
-dependency, which currently has no plan to support 32-bit code generation.
+32-bit support is planned, but with no set date for implementation.
 
 AHKv2 compatibility, especially as v2 continues to evolve, will require
 modification to both the AHK wrapper and the C implementation as the language
@@ -80,10 +79,13 @@ object.
 
 ## Roadmap
 
+* Add a pretty print mode for Dumps.
 * Add a switch to prefer AHK true/false over cJson true/false when rehydrating.
-* Add a simple way to completely override the value rehydrator.
-* Add a special class to force encoding of floating-point strings as floats.
+* ~~Add a special class to force encoding of floating-point strings as floats.~~
+  Doing math on a float with a string buffer appears to erase the string buffer,
+  causing cJson to read it as a float.
 * Add a special class to force encoding of indexed arrays as objects.
+* 32-bit support.
 * Integrate with a future MCLib-hosted COM-based hash-table style object for
   even greater performance.
 
