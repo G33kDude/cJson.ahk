@@ -1,7 +1,7 @@
 ﻿
 class cJson
 {
-	static version := "0.2.0-git-dev"
+	static version := "0.2.1-git-dev"
 
 	_init()
 	{
