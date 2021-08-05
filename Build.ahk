@@ -1,15 +1,15 @@
 ﻿#NoEnv
 SetBatchLines, -1
-SetWorkingDir, %A_LineFile%\..
+SetWorkingDir, %A_LineFile%\..\Src
 
 ; Include the compiler
 #Include %A_LineFile%\..\Src\Lib\MCLib.ahk\MCL.ahk
 
 ; Pull in the C file
-c := FileOpen("Src\cjson.c", "r").Read()
+c := "#include ""dumps.c""`n#include ""loads.c"""
 
 ; Pull in the AHK file
-ahk := FileOpen("Src\cJson.ahk", "r").Read()
+ahk := FileOpen(A_LineFile "\..\Src\cJson.ahk", "r").Read()
 
 ; Compile the C code and generate a standalone loader
 MCL.CompilerSuffix += " -O3"
@@ -28,8 +28,8 @@ ahk := RegExReplace(ahk, "m)^\s+#Include.+MCL.ahk$", "")
 ahk := RegExReplace(ahk, "m)^\s*static version.+\K-dev", "-built")
 
 ; Save to the Dist folder
-FileCreateDir, Dist
-FileOpen("Dist\cJson.ahk", "w").Write(ahk)
+FileCreateDir, %A_LineFile%\..\Dist
+FileOpen(A_LineFile "\..\Dist\cJson.ahk", "w").Write(ahk)
 
 ; Test the build
 Run, %A_LineFile%\..\Tests\!TestDist.ahk
