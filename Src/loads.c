@@ -19,8 +19,6 @@ static IDispatch *objNull;
 MCL_EXPORT_GLOBAL(objNull);
 static IDispatch *fnGetObj;
 MCL_EXPORT_GLOBAL(fnGetObj);
-static bool BIGINTS_AS_FLOATS = 0;
-MCL_EXPORT_GLOBAL(BIGINTS_AS_FLOATS);
 
 #define skip_whitespace                                                                 \
 	while (**ppJson == ' ' || **ppJson == '\n' || **ppJson == '\r' || **ppJson == '\t') \
