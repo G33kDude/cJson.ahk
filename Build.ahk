@@ -26,6 +26,28 @@ ahk := RegExReplace(ahk, "m)^\s+#Include.+MCL.ahk$", "")
 
 ; Update the version string to indicate it's a built version
 ahk := RegExReplace(ahk, "m)^\s*static version.+\K-dev", "-built")
+RegExMatch(ahk, "m)^\s*static version := ""\K[^""]+", version) ; Extract version
+
+; Prepend the LICENSE
+license := Trim(FileOpen(A_LineFile "\..\LICENSE", "r").Read(), " `t`r`n")
+RegExMatch(license, "m)^Copyright \(c\).+", copyright) ; Extract copyright
+license := RegExReplace(license, "m)^Copyright \(c\).+\s+", "") ; Remove copyright
+license := RegExReplace(license, "m)^", "; ") ; Prepend comments
+license := RegExReplace(license, "m)[ \t]+$", "") ; Remove trailing whitespace
+ahk =
+(
+;
+; cJson.ahk %version%
+; %copyright% (known also as GeekDude, G33kDude)
+; https://github.com/G33kDude/cJson.ahk
+;
+%license%
+;
+%ahk%
+)
+
+; Normalize line endings
+ahk := RegExReplace(ahk, "`a)\R", "`r`n")
 
 ; Save to the Dist folder
 FileCreateDir, %A_LineFile%\..\Dist
