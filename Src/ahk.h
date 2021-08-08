@@ -14,6 +14,7 @@ struct Field
 		int64_t iValue;
 		struct Object *pobjValue;
 		LPTSTR pstrValue;
+		double dblValue;
 	};
 
 	int64_t ccValue;

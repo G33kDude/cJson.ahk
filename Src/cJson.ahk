@@ -16,6 +16,9 @@ class cJson
 
 		this.fnGetObj := Func("Object")
 		NumPut(&this.fnGetObj, this.lib.fnGetObj+0, "UPtr")
+
+		this.fnCastString := Func("Format").Bind("{}")
+		NumPut(&this.fnCastString, this.lib.fnCastString, "UPtr")
 	}
 
 	_LoadLib()

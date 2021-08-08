@@ -9,9 +9,14 @@
 
 #include "ahk.h"
 
+#define NULL 0
+
 int write_dec_int64(int64_t number, LPTSTR *ppszString, DWORD *pcchString);
 int write_hex_uint16(unsigned short number, LPTSTR *ppszString, DWORD *pcchString);
 int write_escaped(LPTSTR stronk, LPTSTR *ppszString, DWORD *pcchString);
+
+static IDispatch *fnCastString;
+MCL_EXPORT_GLOBAL(fnCastString);
 
 #define write(char)              \
 	if (ppszString)              \
@@ -124,6 +129,23 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTru
 		{
 			// String
 			write_escaped(currentField->pstrValue, ppszString, pcchString);
+		}
+		else if (currentField->SymbolType == PURE_FLOAT)
+		{
+			// Float
+
+			// Convert field value to VARIANT
+			VARIANT arg = { .vt = VT_R8, .dblVal = currentField->dblValue };
+
+			// Stage the inputs and outputs
+			DISPPARAMS dispparams = { .cArgs = 1, .cNamedArgs = 0, .rgvarg = &arg};
+			VARIANT result;
+
+			// Call the host script's fnCastString to cast to string
+			fnCastString->lpVtbl->Invoke(fnCastString, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &result, NULL, NULL);
+
+			// Yield the result
+			write_str(result.bstrVal);
 		}
 		else
 		{
