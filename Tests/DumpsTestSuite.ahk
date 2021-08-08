@@ -90,6 +90,13 @@ class DumpsTestSuite
 		Yunit.assert(produced == expected, Format(this.message, expected, produced))
 	}
 
+	Test_Floats()
+	{
+		expected = [0.500000, -0.750000, "0.5", 85070591730234615865843651857942052864.000000]
+		produced := cJson.Dumps([1/2, -3/4, 0.5, (0xFFFFFFFFFFFFFFFF*1.0)**2])
+		Yunit.assert(produced == expected, Format(this.message, expected, produced))
+	}
+
 	Test_Emoji()
 	{
 		expected =
