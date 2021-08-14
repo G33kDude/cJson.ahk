@@ -66,12 +66,12 @@ void comobjset_i(IDispatch *pObj, unsigned int key, VARIANT *value)
 {
 	// A buffer large enough to fit the longest uint64_t (18446744073709551615) plus null terminator
 	short str[21];
-	str[21] = 0;
+	str[20] = 0;
 
 	unsigned int n = key;
 
 	// Extract the decimal values
-	int i = 21;
+	int i = 20;
 	do
 	{
 		str[--i] = (short)(key % 10 + '0');
