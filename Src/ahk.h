@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct Object Object;
 typedef struct Field Field;
@@ -13,36 +14,34 @@ struct Field
 	{
 		int64_t iValue;
 		struct Object *pobjValue;
-		LPTSTR pstrValue;
+		struct
+		{
+			LPTSTR pstrValue;
+			SIZE_T ccValue;
+		};
 		double dblValue;
 	};
 
-	int64_t ccValue;
-
 	union
 	{
-		int64_t iKey;
+		INT_PTR iKey;
 		LPTSTR pstrKey;
 		struct Object *pobjKey;
 	};
 
-	union
-	{
-		int8_t SymbolType;
-		int64_t Padding;
-	};
+	int SymbolType;
 };
 
 struct Object
 {
-	int64_t dummy[2];
+	intptr_t dummy[2];
 	void *pBase;
 	Field *pFields;
-	int64_t cFields;
-	int64_t cFieldsMax;
+	intptr_t cFields;
+	intptr_t cFieldsMax;
 
-	int64_t iObjectKeysOffset;
-	int64_t iStringKeysOffset;
+	intptr_t iObjectKeysOffset;
+	intptr_t iStringKeysOffset;
 };
 
 #define SYM_STRING 0

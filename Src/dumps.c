@@ -11,7 +11,7 @@
 
 #define NULL 0
 
-int write_dec_int64(int64_t number, LPTSTR *ppszString, DWORD *pcchString);
+int write_dec_int64(int64_t *number, LPTSTR *ppszString, DWORD *pcchString);
 int write_hex_uint16(unsigned short number, LPTSTR *ppszString, DWORD *pcchString);
 int write_escaped(LPTSTR stronk, LPTSTR *ppszString, DWORD *pcchString);
 
@@ -24,11 +24,35 @@ MCL_EXPORT_GLOBAL(fnCastString);
 	else                         \
 		(*pcchString)++;
 
-#define write_str(str)                \
-	for (int i = 0; str[i] != 0; ++i) \
-	{                                 \
-		write(str[i]);                \
+#define write_str(str)                                                \
+	for (int write_str_i = 0; (str)[write_str_i] != 0; ++write_str_i) \
+	{                                                                 \
+		write((str)[write_str_i]);                                    \
 	}
+
+static inline HRESULT vt_bstr_from_double(double *dbInput, VARIANT *pvOutput)
+{
+	// Convert field value to VARIANT
+	VARIANT vArg = {.vt = VT_R8, .dblVal = *dbInput};
+
+	// Stage the inputs and outputs
+	DISPPARAMS dpArgs = {.cArgs = 1, .cNamedArgs = 0, .rgvarg = &vArg};
+
+	// Call the host script's fnCastString to cast to string
+	return fnCastString->lpVtbl->Invoke(fnCastString, 0, 0, 0, 1, &dpArgs, pvOutput, 0, 0);
+}
+
+static inline HRESULT vt_bstr_from_int64(int64_t *dbInput, VARIANT *pvOutput)
+{
+	// Convert field value to VARIANT
+	VARIANT vArg = {.vt = VT_I8, .llVal = *dbInput};
+
+	// Stage the inputs and outputs
+	DISPPARAMS dpArgs = {.cArgs = 1, .cNamedArgs = 0, .rgvarg = &vArg};
+
+	// Call the host script's fnCastString to cast to string
+	return fnCastString->lpVtbl->Invoke(fnCastString, 0, 0, 0, 1, &dpArgs, pvOutput, 0, 0);
+}
 
 MCL_EXPORT(dumps);
 int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTrue, Object *pobjFalse, Object *pobjNull)
@@ -38,7 +62,8 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTru
 	if (pobjIn->dummy[0] != pobjNull->dummy[0])
 	{
 		write_str("\"Unknown_Object_");
-		write_dec_int64((int64_t)pobjIn, ppszString, pcchString);
+		int64_t val = (intptr_t)pobjIn;
+		write_dec_int64(&val, ppszString, pcchString);
 		write('"');
 		return 0;
 	}
@@ -78,14 +103,16 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTru
 			{
 				// Integer
 				write('"');
-				write_dec_int64(currentField->iKey, ppszString, pcchString);
+				int64_t val = currentField->iKey;
+				write_dec_int64(&val, ppszString, pcchString);
 				write('"');
 			}
 			else if (i < pobjIn->iStringKeysOffset)
 			{
 				// Object
 				write_str("\"Object_");
-				write_dec_int64(currentField->iKey, ppszString, pcchString);
+				int64_t val = currentField->iKey;
+				write_dec_int64(&val, ppszString, pcchString);
 				write('"');
 			}
 			else
@@ -103,7 +130,7 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTru
 		if (currentField->SymbolType == PURE_INTEGER)
 		{
 			// Integer
-			write_dec_int64(currentField->iValue, ppszString, pcchString);
+			write_dec_int64(&currentField->iValue, ppszString, pcchString);
 		}
 		else if (currentField->SymbolType == SYM_OBJECT)
 		{
@@ -133,25 +160,15 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTru
 		else if (currentField->SymbolType == PURE_FLOAT)
 		{
 			// Float
-
-			// Convert field value to VARIANT
-			VARIANT arg = { .vt = VT_R8, .dblVal = currentField->dblValue };
-
-			// Stage the inputs and outputs
-			DISPPARAMS dispparams = { .cArgs = 1, .cNamedArgs = 0, .rgvarg = &arg};
 			VARIANT result;
-
-			// Call the host script's fnCastString to cast to string
-			fnCastString->lpVtbl->Invoke(fnCastString, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &result, NULL, NULL);
-
-			// Yield the result
+			vt_bstr_from_double(&currentField->dblValue, &result);
 			write_str(result.bstrVal);
 		}
 		else
 		{
 			// Unknown
 			write_str("\"Unknown_Value_");
-			write_dec_int64(currentField->iValue, ppszString, pcchString);
+			write_dec_int64(&currentField->iValue, ppszString, pcchString);
 			write('"');
 		}
 	}
@@ -238,35 +255,53 @@ int write_hex_uint16(unsigned short number, LPTSTR *ppszString, DWORD *pcchStrin
 	return 0;
 }
 
-int write_dec_int64(int64_t number, LPTSTR *ppszString, DWORD *pcchString)
+int write_dec_int64(int64_t *pNumber, LPTSTR *ppszString, DWORD *pcchString)
 {
 	// A buffer large enough to fit the longest int64_t (-9223372036854775808)
-	TCHAR buffer[20];
+	TCHAR buffer[21];
+	buffer[20] = 0;
+	int i = 20;
 
-	bool sign = 0;
-	int i = 0;
-
-	// Check if negative
-	if (number < 0)
+#if defined(_WIN64)
+	// Can be converted natively
+	int64_t number = *pNumber;
+#else
+	// 64-bit division on 32-bit platforms links against the stdlib, which is
+	// not available in MCL. For those numbers, call the host script's Format
+	// function.
+	if (*pNumber < -2147483648 || *pNumber > 2147483647)
 	{
-		sign = 1;
-		number = -number;
+		VARIANT result;
+		vt_bstr_from_int64(pNumber, &result);
+		write_str(result.bstrVal);
+		return 0;
 	}
 
+	// Any remaining values that fit into 32-bits can be converted natively
+	int32_t number = *pNumber;
+#endif
+
 	// Extract the decimal values
-	do
+	if (number < 0)
 	{
-		buffer[i++] = (TCHAR)(number % 10 + '0');
-		number /= 10;
-	} while (number != 0);
+		// Negative digits subtract from '0'
+		do
+		{
+			buffer[--i] = (TCHAR)('0' - (number % 10));
+			number /= 10;
+		} while (number != 0);
+		buffer[--i] = '-'; // Add the sign
+	}
+	else
+	{
+		// Positive digits add to '0'
+		do
+		{
+			buffer[--i] = (TCHAR)((number % 10) + '0');
+			number /= 10;
+		} while (number != 0);
+	}
 
-	// Add the negative sign
-	if (sign)
-		buffer[i++] = '-';
-
-	// Output in reverse-buffer order
-	for (--i; i >= 0; --i)
-		write(buffer[i]);
-
+	write_str(&buffer[i]);
 	return 0;
 }
