@@ -52,19 +52,19 @@ struct Object
 
 int obj_get_field_str(Object *pobjIn, LPTSTR searchKey, Field **result)
 {
-	for (int i = 0; i < pobjIn->cFields; i++)
+	for (int iField = 0; iField < pobjIn->cFields; iField++)
 	{
-		Field *currentField = pobjIn->pFields + i;
+		Field *currentField = &pobjIn->pFields[iField];
 
-		if (i < pobjIn->iObjectKeysOffset)
+		if (iField < pobjIn->iObjectKeysOffset)
 		{
 			// Integer
 
 			// A buffer large enough to fit the longest int64_t (-9223372036854775808) plus null terminator
 			WCHAR str[21];
-			str[21] = 0;
+			str[20] = 0;
 
-			int64_t key = currentField->iKey;
+			intptr_t key = currentField->iKey;
 			bool negative = false;
 
 			// Check if negative
@@ -75,7 +75,7 @@ int obj_get_field_str(Object *pobjIn, LPTSTR searchKey, Field **result)
 			}
 
 			// Extract the decimal values
-			int i = 21;
+			int i = 20;
 			do
 			{
 				str[--i] = (WCHAR)(key % 10 + '0');
@@ -113,7 +113,7 @@ int obj_get_field_str(Object *pobjIn, LPTSTR searchKey, Field **result)
 				return 1;
 			}
 		}
-		else if (i < pobjIn->iStringKeysOffset)
+		else if (iField < pobjIn->iStringKeysOffset)
 		{
 			// Object
 		}
