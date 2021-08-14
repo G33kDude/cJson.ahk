@@ -34,7 +34,8 @@ struct Field
 
 struct Object
 {
-	intptr_t dummy[2];
+	void *lpVtbl;
+	void *dummy;
 	void *pBase;
 	Field *pFields;
 	intptr_t cFields;

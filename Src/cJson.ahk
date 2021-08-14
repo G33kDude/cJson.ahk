@@ -10,12 +10,12 @@ class cJson
 		this.lib := this._LoadLib()
 
 		; Populate globals
-		NumPut(&this.True, this.lib.objTrue+0, "UPtr")
-		NumPut(&this.False, this.lib.objFalse+0, "UPtr")
-		NumPut(&this.Null, this.lib.objNull+0, "UPtr")
+		NumPut(&this.True, this.lib.objTrue, "UPtr")
+		NumPut(&this.False, this.lib.objFalse, "UPtr")
+		NumPut(&this.Null, this.lib.objNull, "UPtr")
 
 		this.fnGetObj := Func("Object")
-		NumPut(&this.fnGetObj, this.lib.fnGetObj+0, "UPtr")
+		NumPut(&this.fnGetObj, this.lib.fnGetObj, "UPtr")
 
 		this.fnCastString := Func("Format").Bind("{}")
 		NumPut(&this.fnCastString, this.lib.fnCastString, "UPtr")
@@ -33,11 +33,9 @@ class cJson
 		if (!IsObject(obj))
 			throw Exception("Input must be object")
 		size := 0
-		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr", 0, "Int*", size
-		, "Ptr", &this.True, "Ptr", &this.False, "Ptr", &this.Null, "CDecl Ptr")
+		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr", 0, "Int*", size, "CDecl Ptr")
 		VarSetCapacity(buf, size*2+2, 0)
-		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr*", &buf, "Int*", size
-		, "Ptr", &this.True, "Ptr", &this.False, "Ptr", &this.Null, "CDecl Ptr")
+		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr*", &buf, "Int*", size, "CDecl Ptr")
 		return StrGet(&buf, size, "UTF-16")
 	}
 

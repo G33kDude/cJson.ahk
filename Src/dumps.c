@@ -1,15 +1,5 @@
 
-#define UNICODE
-
-#include <MCL.h>
-#include <oaidl.h>
-
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "ahk.h"
-
-#define NULL 0
+#include "shared.h"
 
 int write_dec_int64(int64_t *number, LPTSTR *ppszString, DWORD *pcchString);
 int write_hex_uint16(unsigned short number, LPTSTR *ppszString, DWORD *pcchString);
@@ -55,11 +45,11 @@ static inline HRESULT vt_bstr_from_int64(int64_t *dbInput, VARIANT *pvOutput)
 }
 
 MCL_EXPORT(dumps);
-int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTrue, Object *pobjFalse, Object *pobjNull)
+int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString)
 {
 
 	// Check the vtable against a known AHK object to verify it is not a COM object
-	if (pobjIn->dummy[0] != pobjNull->dummy[0])
+	if (pobjIn->lpVtbl != objNull->lpVtbl)
 	{
 		write_str("\"Unknown_Object_");
 		int64_t val = (intptr_t)pobjIn;
@@ -135,21 +125,21 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, Object *pobjTru
 		else if (currentField->SymbolType == SYM_OBJECT)
 		{
 			// Object
-			if (currentField->pobjValue == pobjTrue)
+			if (currentField->pobjValue == (Object*)objTrue)
 			{
 				write_str("true");
 			}
-			else if (currentField->pobjValue == pobjFalse)
+			else if (currentField->pobjValue == (Object*)objFalse)
 			{
 				write_str("false");
 			}
-			else if (currentField->pobjValue == pobjNull)
+			else if (currentField->pobjValue == (Object*)objNull)
 			{
 				write_str("null");
 			}
 			else
 			{
-				dumps(currentField->pobjValue, ppszString, pcchString, pobjTrue, pobjFalse, pobjNull);
+				dumps(currentField->pobjValue, ppszString, pcchString);
 			}
 		}
 		else if (currentField->SymbolType == SYM_OPERAND)
