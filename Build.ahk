@@ -13,13 +13,13 @@ ahk := FileOpen(A_LineFile "\..\Src\cJson.ahk", "r").Read()
 
 ; Compile the C code and generate a standalone loader
 MCL.CompilerSuffix += " -O3"
-mcode := MCL.StandaloneAHKFromC(c,, "_LoadLib")
+mcode := MCL.StandaloneAHKFromC(c, MCL.Options.OutputBothBit, "_LoadLib")
 
 ; Indent the generated standalone loader
 mcode := RegExReplace(RegExReplace(mcode, "`am)^\.", "`t."), "`am)^", "`t")
 
 ; Replace the inline compilation with the standalone loader
-ahk := RegExReplace(ahk, "sm)^[ \t]*_LoadLib().+?\R\s*}", mcode)
+ahk := RegExReplace(ahk, "sm)^[ \t]*_LoadLib().+?\R\s*}\R", mcode)
 
 ; Remove the MCLib include
 ahk := RegExReplace(ahk, "m)^\s+#Include.+MCL.ahk$", "")
@@ -54,4 +54,5 @@ FileCreateDir, %A_LineFile%\..\Dist
 FileOpen(A_LineFile "\..\Dist\cJson.ahk", "w").Write(ahk)
 
 ; Test the build
-Run, %A_LineFile%\..\Tests\!TestDist.ahk
+Run, %A_AhkPath%\..\AutoHotkeyU64.exe %A_LineFile%\..\Tests\!TestDist.ahk
+Run, %A_AhkPath%\..\AutoHotkeyU32.exe %A_LineFile%\..\Tests\!TestDist.ahk

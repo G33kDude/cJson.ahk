@@ -1,5 +1,6 @@
 #NoEnv
 SetBatchLines, -1
+#SingleInstance ignore
 
 ; Include Yunit files
 #include %A_LineFile%/../Lib/Yunit
