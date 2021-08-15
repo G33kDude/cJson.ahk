@@ -1,7 +1,7 @@
 ﻿
 class cJson
 {
-	static version := "0.3.0-git-dev"
+	static version := "0.3.1-git-dev"
 
 	BoolsAsInts[]
 	{
