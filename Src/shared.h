@@ -22,4 +22,7 @@ MCL_EXPORT_GLOBAL(objNull);
 static IDispatch *fnGetObj;
 MCL_EXPORT_GLOBAL(fnGetObj);
 
+static bool bBoolsAsInts = false;
+MCL_EXPORT_GLOBAL(bBoolsAsInts);
+
 #endif

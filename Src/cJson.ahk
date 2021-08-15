@@ -3,6 +3,22 @@ class cJson
 {
 	static version := "0.3.0-git-dev"
 
+	BoolsAsInts[]
+	{
+		get
+		{
+			this._init()
+			return NumGet(this.lib.bBoolsAsInts, "Int")
+		}
+
+		set
+		{
+			this._init()
+			NumPut(value, this.lib.bBoolsAsInts, "Int")
+			return value
+		}
+	}
+
 	_init()
 	{
 		if (this.lib)

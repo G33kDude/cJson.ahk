@@ -392,18 +392,34 @@ int loads(short **ppJson, VARIANT *pResult)
 	{
 		expect_str("true");
 
-		pResult->vt = VT_DISPATCH;
-		pResult->pdispVal = objTrue;
-		objTrue->lpVtbl->AddRef(objTrue);
+		if (bBoolsAsInts)
+		{
+			pResult->vt = VT_I4;
+			pResult->llVal = 1;
+		}
+		else
+		{
+			pResult->vt = VT_DISPATCH;
+			pResult->pdispVal = objTrue;
+			objTrue->lpVtbl->AddRef(objTrue);
+		}
 		return 0;
 	}
 	else if (**ppJson == 'f') //////////////////////////////////////////// false
 	{
 		expect_str("false");
 
-		pResult->vt = VT_DISPATCH;
-		pResult->pdispVal = objFalse;
-		objFalse->lpVtbl->AddRef(objFalse);
+		if (bBoolsAsInts)
+		{
+			pResult->vt = VT_I4;
+			pResult->llVal = 0;
+		}
+		else
+		{
+			pResult->vt = VT_DISPATCH;
+			pResult->pdispVal = objFalse;
+			objFalse->lpVtbl->AddRef(objFalse);
+		}
 		return 0;
 	}
 	else if (**ppJson == 'n') ///////////////////////////////////////////// null
