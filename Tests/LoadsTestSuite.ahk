@@ -64,18 +64,18 @@ class LoadsTestSuite
 
 	Test_Array_Specials()
 	{
+		; Test BoolsAsInts True (default)
+		expected := [1, 0, cJson.null]
+		produced  = [true, false, null]
+		produced := cJson.Loads(produced)
+		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
+
+		; Test BoolsAsInts False
 		cJson.BoolsAsInts := False
 		expected := [cJson.true, cJson.false, cJson.null]
 		produced  = [true, false, null]
 		produced := cJson.Loads(produced)
 		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
-
-		cJson.BoolsAsInts := True
-		expected := [1, 0, cJson.null]
-		produced  = [true, false, null]
-		produced := cJson.Loads(produced)
-		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
-		cJson.BoolsAsInts := False
 	}
 
 	Test_Array_Nested()
