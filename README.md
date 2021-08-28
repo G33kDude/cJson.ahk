@@ -88,6 +88,10 @@ object.
 ## Roadmap
 
 * Add a pretty print mode for Dumps.
+* Add methods to extract values from the JSON blob without loading the full
+  object into memory.
+* Add methods to replace values in the JSON blob without fully parsing and
+  reformatting the blob.
 * Add a special class to force encoding of indexed arrays as objects.
 * Integrate with a future MCLib-hosted COM-based hash-table style object for
   even greater performance.
