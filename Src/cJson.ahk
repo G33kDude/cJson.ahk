@@ -43,15 +43,17 @@ class cJson
 		return MCL.FromC("#include ""dumps.c""`n#include ""loads.c""")
 	}
 
-	Dumps(obj)
+	Dumps(obj, pretty := 0)
 	{
 		this._init()
 		if (!IsObject(obj))
 			throw Exception("Input must be object")
 		size := 0
-		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr", 0, "Int*", size, "CDecl Ptr")
+		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr", 0, "Int*", size
+		, "Int", !!pretty, "Int", 0, "CDecl Ptr")
 		VarSetCapacity(buf, size*2+2, 0)
-		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr*", &buf, "Int*", size, "CDecl Ptr")
+		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr*", &buf, "Int*", size
+		, "Int", !!pretty, "Int", 0, "CDecl Ptr")
 		return StrGet(&buf, size, "UTF-16")
 	}
 

@@ -20,6 +20,12 @@ MCL_EXPORT_GLOBAL(fnCastString);
 		write((str)[write_str_i]);                                    \
 	}
 
+#define write_indent(level)                                                \
+	for (int write_indent_i = 0; write_indent_i < level; ++write_indent_i) \
+	{                                                                      \
+		write_str("\t");                                                   \
+	}
+
 static inline HRESULT vt_bstr_from_double(double *dbInput, VARIANT *pvOutput)
 {
 	// Convert field value to VARIANT
@@ -45,7 +51,7 @@ static inline HRESULT vt_bstr_from_int64(int64_t *dbInput, VARIANT *pvOutput)
 }
 
 MCL_EXPORT(dumps);
-int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString)
+int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, int iLevel)
 {
 
 	// Check the vtable against a known AHK object to verify it is not a COM object
@@ -73,6 +79,10 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString)
 
 	// Output the opening brace
 	write(isIndexed ? '[' : '{');
+	if (bPretty)
+	{
+		write_str("\r\n");
+	}
 
 	// Enumerate fields
 	for (int i = 0; i < pobjIn->cFields; i++)
@@ -83,7 +93,19 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString)
 		if (i > 0)
 		{
 			write(',');
-			write(' ');
+			if (bPretty)
+			{
+				write_str("\r\n");
+			}
+			else
+			{
+				write(' ');
+			}
+		}
+
+		if (bPretty)
+		{
+			write_indent(iLevel + 1);
 		}
 
 		// Output the key and colon
@@ -125,21 +147,21 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString)
 		else if (currentField->SymbolType == SYM_OBJECT)
 		{
 			// Object
-			if (currentField->pobjValue == (Object*)objTrue)
+			if (currentField->pobjValue == (Object *)objTrue)
 			{
 				write_str("true");
 			}
-			else if (currentField->pobjValue == (Object*)objFalse)
+			else if (currentField->pobjValue == (Object *)objFalse)
 			{
 				write_str("false");
 			}
-			else if (currentField->pobjValue == (Object*)objNull)
+			else if (currentField->pobjValue == (Object *)objNull)
 			{
 				write_str("null");
 			}
 			else
 			{
-				dumps(currentField->pobjValue, ppszString, pcchString);
+				dumps(currentField->pobjValue, ppszString, pcchString, bPretty, iLevel + 1);
 			}
 		}
 		else if (currentField->SymbolType == SYM_OPERAND)
@@ -164,6 +186,11 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString)
 	}
 
 	// Output the closing brace
+	if (bPretty)
+	{
+		write_str("\r\n");
+		write_indent(iLevel);
+	}
 	write(isIndexed ? ']' : '}');
 
 	return 0;
