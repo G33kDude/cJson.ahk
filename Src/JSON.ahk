@@ -1,7 +1,7 @@
 ﻿
-class cJson
+class JSON
 {
-	static version := "0.3.1-git-dev"
+	static version := "0.4.0-git-dev"
 
 	BoolsAsInts[]
 	{
@@ -43,7 +43,7 @@ class cJson
 		return MCL.FromC("#include ""dumps.c""`n#include ""loads.c""")
 	}
 
-	Dumps(obj, pretty := 0)
+	Dump(obj, pretty := 0)
 	{
 		this._init()
 		if (!IsObject(obj))
@@ -57,7 +57,7 @@ class cJson
 		return StrGet(&buf, size, "UTF-16")
 	}
 
-	Loads(ByRef json)
+	Load(ByRef json)
 	{
 		this._init()
 

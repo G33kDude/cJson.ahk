@@ -11,7 +11,7 @@ SetWorkingDir, %A_LineFile%/../../Src/
 #Include OutputDebug.ahk
 
 ; Include dev cJson
-#Include %A_LineFile%/../../Src/cJson.ahk
+#Include %A_LineFile%/../../Src/JSON.ahk
 
 ; Include test suites
 #Include %A_LineFile%\..\

@@ -11,7 +11,7 @@ SetBatchLines, -1
 #Include OutputDebug.ahk
 
 ; Include Dist cJson
-#Include %A_LineFile%/../../Dist/cJson.ahk
+#Include %A_LineFile%/../../Dist/JSON.ahk
 
 ; Include test suites
 #Include %A_LineFile%\..\

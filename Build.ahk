@@ -9,7 +9,7 @@ SetWorkingDir, %A_LineFile%\..\Src
 c := "#include ""dumps.c""`n#include ""loads.c"""
 
 ; Pull in the AHK file
-ahk := FileOpen(A_LineFile "\..\Src\cJson.ahk", "r").Read()
+ahk := FileOpen(A_LineFile "\..\Src\JSON.ahk", "r").Read()
 
 ; Compile the C code and generate a standalone loader
 MCL.CompilerSuffix += " -O3"
@@ -51,7 +51,7 @@ ahk := RegExReplace(ahk, "`a)\R", "`r`n")
 
 ; Save to the Dist folder
 FileCreateDir, %A_LineFile%\..\Dist
-FileOpen(A_LineFile "\..\Dist\cJson.ahk", "w").Write(ahk)
+FileOpen(A_LineFile "\..\Dist\JSON.ahk", "w").Write(ahk)
 
 ; Test the build
 Run, %A_AhkPath%\..\AutoHotkeyU64.exe %A_LineFile%\..\Tests\!TestDist.ahk
