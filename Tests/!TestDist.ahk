@@ -1,6 +1,6 @@
 #NoEnv
 SetBatchLines, -1
-#SingleInstance ignore
+#SingleInstance Off
 #Warn
 
 ; Include Yunit files
