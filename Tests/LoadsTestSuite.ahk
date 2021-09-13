@@ -150,7 +150,7 @@ isEqual(o1, o2)
 {
 	if (!IsObject(o1) && !IsObject(o2)) ; Neither objects
 		return (o1 == o2)
-	if (IsObject(obj1) ^ IsObject(obj2)) ; Only one is an object
+	if (IsObject(o1) ^ IsObject(o2)) ; Only one is an object
 		return false
 	; else Both objects
 	
@@ -165,6 +165,7 @@ isEqual(o1, o2)
 	; Equivalency check
 	e1 := o1._NewEnum()
 	e2 := o2._NewEnum()
+	k1 := v1 := k2 := v2 := ""
 	while (e1.Next(k1, v1) && e2.Next(k2, v2))
 	{
 		if !isEqual(k1, k2)
@@ -174,7 +175,7 @@ isEqual(o1, o2)
 	}
 	
 	; Enums not dry, mismatched
-	if (enum1.Next(k1, v1) || enum2.Next(k1, v1))
+	if (e1.Next(k1, v1) || e2.Next(k1, v1))
 		return false
 	
 	return true
