@@ -3,7 +3,7 @@ SetBatchLines, -1
 SetWorkingDir, %A_LineFile%\..\Src
 
 ; Include the compiler
-#Include %A_LineFile%\..\Src\Lib\MCLib.ahk\MCL.ahk
+#Include %A_LineFile%\..\Src\Lib\MCL.ahk\MCL.ahk
 
 ; Pull in the C file
 c := "#include ""dumps.c""`n#include ""loads.c"""
