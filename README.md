@@ -34,7 +34,7 @@ Converting JSON to an AHK Object:
 
 ; Create some JSON
 str = ["abc", 123, {"true": 1, "false": 0, "null": ""}, [true, false, null]]
-obj := JSON.Loads(str)
+obj := JSON.Load(str)
 
 MsgBox, % obj[1] ; abc
 MsgBox, % obj[2] ; 123
@@ -87,7 +87,7 @@ object.
 
 ## Roadmap
 
-* Add a pretty print mode for Dumps.
+* Add a pretty print mode for Dump.
 * Add methods to extract values from the JSON blob without loading the full
   object into memory.
 * Add methods to replace values in the JSON blob without fully parsing and
