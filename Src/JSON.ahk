@@ -1,7 +1,7 @@
 ﻿
 class JSON
 {
-	static version := "0.4.0-git-dev"
+	static version := "0.4.1-git-dev"
 
 	BoolsAsInts[]
 	{
