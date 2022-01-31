@@ -87,7 +87,9 @@ object.
 
 ## Roadmap
 
-* Add a pretty print mode for Dump.
+* Allow changing the indent style for pretty print mode.
+* Export differently packaged versions of the library (e.g. JSON, cJson, and
+  Jxon) for better compatibility.
 * Add methods to extract values from the JSON blob without loading the full
   object into memory.
 * Add methods to replace values in the JSON blob without fully parsing and
