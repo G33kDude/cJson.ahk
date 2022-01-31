@@ -112,6 +112,14 @@ class DumpsTestSuite
 		Yunit.assert(produced == expected, Format(this.message, expected, produced))
 	}
 
+	Test_Escape_Unicode()
+	{
+		JSON.EscapeUnicode := False
+		expected = ["📎🐟💝🐤🔼🏡👓 🍩🌅🌳🐔🏩🍎 📵🍭🌖🔠🍚"]
+		produced := JSON.Dump(["📎🐟💝🐤🔼🏡👓 🍩🌅🌳🐔🏩🍎 📵🍭🌖🔠🍚"])
+		Yunit.assert(produced == expected, Format(this.message, expected, produced))
+	}
+
 	Test_Big_Numbers()
 	{
 		if (A_PtrSize == 4)

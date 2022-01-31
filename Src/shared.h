@@ -25,4 +25,7 @@ MCL_EXPORT_GLOBAL(fnGetObj);
 static bool bBoolsAsInts = true;
 MCL_EXPORT_GLOBAL(bBoolsAsInts);
 
+static bool bEscapeUnicode = true;
+MCL_EXPORT_GLOBAL(bEscapeUnicode);
+
 #endif

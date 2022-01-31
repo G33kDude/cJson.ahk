@@ -239,8 +239,11 @@ int write_escaped(LPTSTR pt, LPTSTR *ppszString, DWORD *pcchString)
 			write('\\');
 			write('t');
 		}
-		else if (*pt < ' ' || *pt > '~') // outside printable ascii
-		{
+		else if (
+			bEscapeUnicode
+			? ((unsigned short)*pt < ' ' ||(unsigned short)*pt > '~') // Outside printable ascii
+			: ((unsigned short)*pt < ' ' || ((unsigned short)*pt > '~' && (unsigned short)*pt < 0xA1)) // Outside printable ascii, allowing Unicode passthrough
+		) {
 			write('\\');
 			write('u');
 			write_hex_uint16(*pt, ppszString, pcchString);

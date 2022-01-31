@@ -19,6 +19,22 @@ class JSON
 		}
 	}
 
+	EscapeUnicode[]
+	{
+		get
+		{
+			this._init()
+			return NumGet(this.lib.bEscapeUnicode, "Int")
+		}
+
+		set
+		{
+			this._init()
+			NumPut(value, this.lib.bEscapeUnicode, "Int")
+			return value
+		}
+	}
+
 	_init()
 	{
 		if (this.lib)
