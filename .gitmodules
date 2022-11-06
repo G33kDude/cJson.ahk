@@ -1,9 +1,3 @@
-[submodule "Lib/Yunit"]
-	path = Tests/Lib/Yunit
-	url = https://github.com/Uberi/Yunit.git
-[submodule "Lib/MCLib.ahk"]
-	path = Src/Lib/MCLib.ahk
-	url = https://github.com/G33kDude/MCLib.ahk.git
 [submodule "Src/MCL.ahk"]
 	path = Src/Lib/MCL.ahk
 	url = https://github.com/G33kDude/MCL.ahk.git
