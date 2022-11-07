@@ -1,7 +1,7 @@
 ﻿
 class JSON
 {
-	static version := "0.4.1-git-dev"
+	static version := "0.5.0-git-dev"
 
 	BoolsAsInts[]
 	{
@@ -15,6 +15,22 @@ class JSON
 		{
 			this._init()
 			NumPut(value, this.lib.bBoolsAsInts, "Int")
+			return value
+		}
+	}
+
+	NullsAsStrings[]
+	{
+		get
+		{
+			this._init()
+			return NumGet(this.lib.bNullsAsStrings, "Int")
+		}
+
+		set
+		{
+			this._init()
+			NumPut(value, this.lib.bNullsAsStrings, "Int")
 			return value
 		}
 	}

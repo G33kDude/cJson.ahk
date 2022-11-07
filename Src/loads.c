@@ -62,6 +62,8 @@ void comobjset_i(IDispatch *pObj, unsigned int key, VARIANT *value)
 	comobjset(pObj, &str[i], value);
 }
 
+BSTR pszEmpty = { 0 };
+
 MCL_EXPORT(loads);
 int loads(short **ppJson, VARIANT *pResult)
 {
@@ -426,9 +428,17 @@ int loads(short **ppJson, VARIANT *pResult)
 	{
 		expect_str("null");
 
-		pResult->vt = VT_DISPATCH;
-		pResult->pdispVal = objNull;
-		objNull->lpVtbl->AddRef(objNull);
+		if (bNullsAsStrings)
+		{
+			pResult->vt = VT_BSTR;
+			pResult->bstrVal = pszEmpty;
+		}
+		else
+		{
+			pResult->vt = VT_DISPATCH;
+			pResult->pdispVal = objNull;
+			objNull->lpVtbl->AddRef(objNull);
+		}
 		return 0;
 	}
 

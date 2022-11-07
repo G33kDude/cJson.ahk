@@ -64,18 +64,40 @@ class LoadsTestSuite
 
 	Test_Array_Specials()
 	{
-		; Test BoolsAsInts True (default)
-		expected := [1, 0, JSON.null]
-		produced  = [true, false, null]
+		; Save default value
+		startBoolsAsInts := JSON.BoolsAsInts
+		startNullsAsStrings := JSON.NullsAsStrings
+
+		; Test BoolsAsInts True
+		JSON.BoolsAsInts := True
+		expected := [1, 0]
+		produced  = [true, false]
 		produced := JSON.Load(produced)
 		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
 
 		; Test BoolsAsInts False
 		JSON.BoolsAsInts := False
-		expected := [JSON.true, JSON.false, JSON.null]
-		produced  = [true, false, null]
+		expected := [JSON.true, JSON.false]
+		produced  = [true, false]
 		produced := JSON.Load(produced)
 		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
+
+		; Test NullsAsStrings True
+		JSON.NullsAsStrings := True
+		expected := [""]
+		produced  = [null]
+		produced := JSON.Load(produced)
+
+		; Test NullsAsStrings False
+		JSON.NullsAsStrings := False
+		expected := [JSON.Null]
+		produced  = [null]
+		produced := JSON.Load(produced)
+		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
+
+		; Restore default value
+		JSON.BoolsAsInts := startBoolsAsInts
+		JSON.NullsAsStrings := startNullsAsStrings
 	}
 
 	Test_Array_Nested()
