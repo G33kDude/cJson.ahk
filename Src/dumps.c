@@ -8,6 +8,9 @@ int write_escaped(LPTSTR stronk, LPTSTR *ppszString, DWORD *pcchString);
 static IDispatch *fnCastString;
 MCL_EXPORT_GLOBAL(fnCastString);
 
+static bool bEmptyObjectsAsArrays = false;
+MCL_EXPORT_GLOBAL(bEmptyObjectsAsArrays);
+
 #define write(char)              \
 	if (ppszString)              \
 		*(*ppszString)++ = char; \
@@ -66,7 +69,11 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, i
 
 	// Check if the object is a sequentially indexed array
 	bool isIndexed = false;
-	if (pobjIn->iObjectKeysOffset == pobjIn->cFields) // Are all fields numeric?
+	if (pobjIn->cFields == 0) // No fields
+	{
+		isIndexed = bEmptyObjectsAsArrays;
+	}
+	else if (pobjIn->iObjectKeysOffset == pobjIn->cFields) // Are all fields numeric?
 	{
 		// Check that all numeric keys' values match their index
 		isIndexed = true;
