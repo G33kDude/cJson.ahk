@@ -87,7 +87,7 @@ class JSON
 
 	_LoadLib()
 	{
-		MCL.CompilerSuffix += " -O3" ; Gotta go fast
+		MCL.CompilerSuffix .= " -O3" ; Gotta go fast
 		return MCL.FromC("#include ""dumps.c""`n#include ""loads.c""")
 	}
 
