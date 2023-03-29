@@ -104,10 +104,6 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, i
 			{
 				write_str("\r\n");
 			}
-			else
-			{
-				write(' ');
-			}
 		}
 
 		if (bPretty)
@@ -142,7 +138,10 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, i
 
 			// Output colon key-value separator
 			write(':');
-			write(' ');
+			if (bPretty)
+			{
+				write(' ');
+			}
 		}
 
 		// Output the value
