@@ -1,7 +1,7 @@
 ﻿
 class JSON
 {
-	static version := "0.5.1-git-dev"
+	static version := "0.6.0-git-dev"
 
 	BoolsAsInts[]
 	{
@@ -87,7 +87,7 @@ class JSON
 
 	_LoadLib()
 	{
-		MCL.CompilerSuffix += " -O3" ; Gotta go fast
+		MCL.CompilerSuffix .= " -O3" ; Gotta go fast
 		return MCL.FromC("#include ""dumps.c""`n#include ""loads.c""")
 	}
 

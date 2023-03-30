@@ -12,7 +12,7 @@ c := "#include ""dumps.c""`n#include ""loads.c"""
 ahk := FileOpen(A_LineFile "\..\Src\JSON.ahk", "r").Read()
 
 ; Compile the C code and generate a standalone loader
-MCL.CompilerSuffix += " -O3"
+MCL.CompilerSuffix .= " -O3"
 mcode := MCL.StandaloneAHKFromC(c, MCL.Options.OutputBothBit, "_LoadLib")
 
 ; Indent the generated standalone loader
