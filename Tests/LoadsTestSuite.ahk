@@ -162,6 +162,14 @@ class LoadsTestSuite
 		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
 	}
 
+	Test_Key_Capitalization()
+	{
+		expected := {"A": {"a": {"B": {"b": 1}}}}
+		produced  = {"A": {"a": {"B": {"b": 1}}}}
+		produced := JSON.Load(produced)
+		Yunit.assert(isEqual(produced, expected), Format(this.message, expected, produced))
+	}
+
 	End()
 	{
 		;
