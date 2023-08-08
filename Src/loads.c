@@ -21,25 +21,23 @@ void comobjset(IDispatch *pObj, BSTR key, VARIANT *value)
 	DISPID dispid = 0;
 	pObj->lpVtbl->GetIDsOfNames(pObj, NULL, &key, 1, 0, &dispid);
 
+	VARIANT args[2];
+	args[0].vt = value->vt;
+	args[0].llVal = value->llVal;
+	args[1].vt = VT_BSTR;
+	args[1].bstrVal = key;
+
 	// Set the property
 	DISPPARAMS dispparams = {
-		.cArgs = 1,
+		.cArgs = 2,
 		.cNamedArgs = 0,
-		.rgvarg = value};
-	pObj->lpVtbl->Invoke(pObj, dispid, NULL, 0, DISPATCH_PROPERTYPUT, &dispparams, NULL, NULL, NULL);
+		.rgvarg = args};
+	pObj->lpVtbl->Invoke(pObj, DISPID_VALUE, NULL, 0, DISPATCH_PROPERTYPUT, &dispparams, NULL, NULL, NULL);
 
 	// Decrement the reference count of the object given by pfnGetObj
 	if (value->vt == VT_DISPATCH)
 	{
 		value->pdispVal->lpVtbl->Release(value->pdispVal);
-	}
-	else if (value->vt == VT_I4 && (value->llVal > 2147483647 || value->llVal < -2147483648)) // Fix integer overflow
-	{
-		Field *field;
-		if (obj_get_field_str((Object *)pObj, key, &field))
-		{
-			field->iValue = value->llVal;
-		}
 	}
 }
 
@@ -64,7 +62,7 @@ void comobjset_i(IDispatch *pObj, unsigned int key, VARIANT *value)
 
 BSTR pszEmpty = { 0 };
 
-MCL_EXPORT(loads);
+MCL_EXPORT(loads, Ptr, ppJson, Ptr, pResult, CDecl_Int);
 int loads(short **ppJson, VARIANT *pResult)
 {
 	pResult->vt = VT_I8;
@@ -81,7 +79,7 @@ int loads(short **ppJson, VARIANT *pResult)
 		// Get an object from the host script to populate
 		DISPPARAMS dispparams = {.cArgs = 0, .cNamedArgs = 0};
 		VARIANT pObjVt;
-		fnGetObj->lpVtbl->Invoke(fnGetObj, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
+		fnGetMap->lpVtbl->Invoke(fnGetMap, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
 		IDispatch *pObj = pObjVt.pdispVal;
 
 		// Process key/value pairs
@@ -139,8 +137,13 @@ int loads(short **ppJson, VARIANT *pResult)
 		// Get an array from the host script to populate
 		DISPPARAMS dispparams = {.cArgs = 0, .cNamedArgs = 0};
 		VARIANT pObjVt;
-		fnGetObj->lpVtbl->Invoke(fnGetObj, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
+		fnGetArray->lpVtbl->Invoke(fnGetArray, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
 		IDispatch *pObj = pObjVt.pdispVal;
+
+		// Get the DispID for Push method
+		LPOLESTR names[] = { L"Push\0" };
+		DISPID dispidPush = 0;
+		pObj->lpVtbl->GetIDsOfNames(pObj, NULL, names, 1, 0, &dispidPush);
 
 		// Process values pairs
 		for (unsigned int keyNum = 1;; ++keyNum)
@@ -154,7 +157,18 @@ int loads(short **ppJson, VARIANT *pResult)
 			if (loads(ppJson, pResult))
 				return -1;
 
-			comobjset_i(pObj, keyNum, pResult);
+			// Push the new value
+			DISPPARAMS dispparams = {
+				.cArgs = 1,
+				.cNamedArgs = 0,
+				.rgvarg = pResult};
+			pObj->lpVtbl->Invoke(pObj, dispidPush, NULL, 0, DISPATCH_METHOD, &dispparams, NULL, NULL, NULL);
+
+			// Decrement the reference count of the object
+			if (pResult->vt == VT_DISPATCH)
+			{
+				pResult->pdispVal->lpVtbl->Release(pResult->pdispVal);
+			}
 
 			// Skip the comma separator or break on other character
 			skip_whitespace;
@@ -380,13 +394,6 @@ int loads(short **ppJson, VARIANT *pResult)
 			pResult->llVal *= polarity;
 		else if (pResult->vt == VT_R8)
 			pResult->dblVal *= polarity;
-
-		// AHK workaround for setting pure integer values
-		// Native object code will fix any overflow problems
-		if (pResult->vt == VT_I8)
-		{
-			pResult->vt = VT_I4;
-		}
 
 		return 0;
 	}

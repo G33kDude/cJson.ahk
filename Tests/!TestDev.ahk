@@ -1,6 +1,6 @@
-#NoEnv
-SetBatchLines, -1
-SetWorkingDir, %A_LineFile%/../../Src/
+#Requires AutoHotkey v2.0
+
+SetWorkingDir A_InitialWorkingDir
 
 ; Include Yunit files
 #include %A_LineFile%/../Lib/Yunit

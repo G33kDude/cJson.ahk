@@ -6,10 +6,10 @@ int write_hex_uint16(unsigned short number, LPTSTR *ppszString, DWORD *pcchStrin
 int write_escaped(LPTSTR stronk, LPTSTR *ppszString, DWORD *pcchString);
 
 static IDispatch *fnCastString;
-MCL_EXPORT_GLOBAL(fnCastString);
+MCL_EXPORT_GLOBAL(fnCastString, Ptr);
 
 static bool bEmptyObjectsAsArrays = false;
-MCL_EXPORT_GLOBAL(bEmptyObjectsAsArrays);
+MCL_EXPORT_GLOBAL(bEmptyObjectsAsArrays, Int);
 
 #define write(char)              \
 	if (ppszString)              \
@@ -53,48 +53,131 @@ static inline HRESULT vt_bstr_from_int64(int64_t *dbInput, VARIANT *pvOutput)
 	return fnCastString->lpVtbl->Invoke(fnCastString, 0, 0, 0, 1, &dpArgs, pvOutput, 0, 0);
 }
 
-MCL_EXPORT(dumps);
-int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, int iLevel)
-{
+enum ObjectType {
+	ARRAY,
+	MAP,
+	OBJECT
+};
 
-	// Check the vtable against a known AHK object to verify it is not a COM object
-	if (pobjIn->lpVtbl != objNull->lpVtbl)
-	{
+MCL_IMPORT(BSTR, OleAut32, SysAllocString, (const WCHAR *psz));
+MCL_IMPORT(BSTR, OleAut32, SysFreeString, (BSTR bstrString));
+
+static IID IID_NULL[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+MCL_EXPORT(dumps, Ptr, pObjIn, Ptr, ppszString, IntP, pcchString, Int, bPretty, Int, iLevel, CDecl_Ptr);
+intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, int iLevel)
+{
+	DISPID dispidHasMethod;
+	LPOLESTR hasMethod = L"HasMethod";
+	pObjIn->lpVtbl->GetIDsOfNames(pObjIn, IID_NULL, &hasMethod, 1, 0, &dispidHasMethod);
+	if (dispidHasMethod == DISPID_UNKNOWN) {
 		write_str("\"Unknown_Object_");
-		int64_t val = (intptr_t)pobjIn;
+		int64_t val = (intptr_t)pObjIn;
 		write_dec_int64(&val, ppszString, pcchString);
 		write('"');
 		return 0;
 	}
 
-	// Check if the object is a sequentially indexed array
-	bool isIndexed = false;
-	if (pobjIn->cFields == 0) // No fields
+	BSTR push = L"Push"; // SysAllocString(L"Push");
+	VARIANT pushArg = { .vt = VT_BSTR, .bstrVal = push};
+
+	DISPPARAMS hasMethodParams = {
+		.cArgs = 1,
+		.cNamedArgs = 0,
+		.rgvarg = &pushArg
+	};
+
+	VARIANT hadPush = { .vt = VT_EMPTY };
+	HRESULT hadPushResult = pObjIn->lpVtbl->Invoke(pObjIn, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadPush, NULL, NULL);
+
+	BSTR set = L"Set"; // SysAllocString(L"Set");
+	VARIANT setArg = { .vt = VT_BSTR, .bstrVal = set};
+
+	hasMethodParams.rgvarg = &setArg;
+	VARIANT hadSet = { .vt = VT_EMPTY };
+	HRESULT hadSetResult = pObjIn->lpVtbl->Invoke(pObjIn, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadSet, NULL, NULL);
+
+	enum ObjectType objectType;
+	if (hadPush.vt == VT_I4 && hadPush.intVal != 0) // Has Push
 	{
-		isIndexed = bEmptyObjectsAsArrays;
+		objectType = ARRAY;
 	}
-	else if (pobjIn->iObjectKeysOffset == pobjIn->cFields) // Are all fields numeric?
+	else if (hadSet.vt == VT_I4 && hadSet.intVal != 0) // Has Set
 	{
-		// Check that all numeric keys' values match their index
-		isIndexed = true;
-		for (int i = 0; isIndexed && i < pobjIn->cFields; i++)
-		{
-			Field *currentField = pobjIn->pFields + i;
-			isIndexed = currentField->iKey == i + 1;
-		}
+		objectType = MAP;
+	}
+	else
+	{
+		write_str("\"Unknown_Object_");
+		int64_t val = (intptr_t)pObjIn;
+		write_dec_int64(&val, ppszString, pcchString);
+		write('"');
+		return 0;
+	}
+
+	// Retrieve an enumerator for two values
+	LPOLESTR nameEnum = L"__Enum";
+	DISPID dispidEnum = 0;
+	pObjIn->lpVtbl->GetIDsOfNames(pObjIn, NULL, &nameEnum, 1, 0, &dispidEnum);
+
+	VARIANT two = { .vt = VT_I4, .intVal = 2 };
+	DISPPARAMS dispparams = { .cArgs = 1, .cNamedArgs = 0, .rgvarg = &two };
+	VARIANT vtEnumFunc = { .vt = VT_EMPTY };
+	pObjIn->lpVtbl->Invoke(
+		pObjIn,
+		dispidEnum,
+		NULL,
+		0,
+		DISPATCH_METHOD | DISPATCH_PROPERTYGET,
+		&dispparams,
+		&vtEnumFunc,
+		NULL,
+		NULL
+	);
+
+	if (vtEnumFunc.vt != VT_DISPATCH) {
+		write_str("\"Unknown_Object_");
+		int64_t val = (intptr_t)pObjIn;
+		write_dec_int64(&val, ppszString, pcchString);
+		write('"');
+		return 0;
 	}
 
 	// Output the opening brace
-	write(isIndexed ? '[' : '{');
+	write(objectType == ARRAY ? '[' : '{');
 	if (bPretty)
 	{
 		write_str("\r\n");
 	}
 
 	// Enumerate fields
-	for (int i = 0; i < pobjIn->cFields; i++)
+	VARIANT arg1_ = { .vt = VT_EMPTY };
+	VARIANT arg2_ = { .vt = VT_EMPTY };
+	VARIANT arg1 = { .vt = VT_BYREF | VT_VARIANT, .pvarVal = &arg1_ };
+	VARIANT arg2 = { .vt = VT_BYREF | VT_VARIANT, .pvarVal = &arg2_ };
+	VARIANT newResult = { .vt = VT_EMPTY };
+	for (int i = 0; true; i++)
 	{
-		Field *currentField = pobjIn->pFields + i;
+		VARIANT argArray[2] = { arg2, arg1 };
+		DISPPARAMS loopVars = { .cArgs = 2, .cNamedArgs = 0, .rgvarg = argArray };
+		HRESULT response = vtEnumFunc.pdispVal->lpVtbl->Invoke(
+			vtEnumFunc.pdispVal,
+			0,
+			NULL,
+			0,
+			DISPATCH_METHOD,
+			&loopVars,
+			&newResult,
+			NULL,
+			NULL
+		);
+
+		if (response != 0) {
+			return response;
+		}
+		if (newResult.vt != VT_I4 || newResult.intVal == 0) {
+			break;
+		}
 
 		// Output field separator
 		if (i > 0)
@@ -112,28 +195,42 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, i
 		}
 
 		// Output the key and colon
-		if (!isIndexed)
+		if (objectType == MAP)
 		{
-			if (i < pobjIn->iObjectKeysOffset)
+			if (arg1.pvarVal->vt == VT_I4)
 			{
 				// Integer
 				write('"');
-				int64_t val = currentField->iKey;
+				int64_t val = arg1.pvarVal->intVal;
 				write_dec_int64(&val, ppszString, pcchString);
 				write('"');
 			}
-			else if (i < pobjIn->iStringKeysOffset)
+			else if (arg1.pvarVal->vt == VT_I8)
+			{
+				// 64-bit Integer
+				write('"');
+				write_dec_int64(&arg1.pvarVal->llVal, ppszString, pcchString);
+				write('"');
+			}
+			else if (arg1.pvarVal->vt == VT_DISPATCH)
 			{
 				// Object
 				write_str("\"Object_");
-				int64_t val = currentField->iKey;
+				int64_t val = (intptr_t)arg1_.pdispVal;
 				write_dec_int64(&val, ppszString, pcchString);
 				write('"');
 			}
-			else
+			else if (arg1.pvarVal->vt == VT_BSTR)
 			{
 				// String
-				write_escaped(currentField->pstrKey, ppszString, pcchString);
+				write_escaped(arg1.pvarVal->bstrVal, ppszString, pcchString);
+			}
+			else
+			{
+				write_str("\"Unknown_Type_");
+				int64_t that = arg1.pvarVal->vt;
+				write_dec_int64(&that, ppszString, pcchString);
+				write('"');
 			}
 
 			// Output colon key-value separator
@@ -145,51 +242,70 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, i
 		}
 
 		// Output the value
-		if (currentField->SymbolType == PURE_INTEGER)
+		if (arg2.pvarVal->vt == VT_I4)
 		{
 			// Integer
-			write_dec_int64(&currentField->iValue, ppszString, pcchString);
+			int64_t val = arg2.pvarVal->intVal;
+			write_dec_int64(&val, ppszString, pcchString);
 		}
-		else if (currentField->SymbolType == SYM_OBJECT)
+		else if (arg2.pvarVal->vt == VT_I8)
+		{
+			// 64-Bit Integer
+			write_dec_int64(&arg2.pvarVal->llVal, ppszString, pcchString);
+		}
+		else if (arg2.pvarVal->vt == VT_DISPATCH)
 		{
 			// Object
-			if (currentField->pobjValue == (Object *)objTrue)
+			if (arg2.pvarVal->pdispVal == objTrue)
 			{
 				write_str("true");
 			}
-			else if (currentField->pobjValue == (Object *)objFalse)
+			else if (arg2.pvarVal->pdispVal == objFalse)
 			{
 				write_str("false");
 			}
-			else if (currentField->pobjValue == (Object *)objNull)
+			else if (arg2.pvarVal->pdispVal == objNull)
 			{
 				write_str("null");
 			}
 			else
 			{
-				dumps(currentField->pobjValue, ppszString, pcchString, bPretty, iLevel + 1);
+				dumps(arg2.pvarVal->pdispVal, ppszString, pcchString, bPretty, iLevel + 1);
 			}
 		}
-		else if (currentField->SymbolType == SYM_OPERAND)
+		else if (arg2.pvarVal->vt == VT_BSTR)
 		{
 			// String
-			write_escaped(currentField->pstrValue, ppszString, pcchString);
+			write_escaped(arg2.pvarVal->bstrVal, ppszString, pcchString);
 		}
-		else if (currentField->SymbolType == PURE_FLOAT)
+		else if (arg2.pvarVal->vt == VT_R8)
 		{
 			// Float
 			VARIANT result;
-			vt_bstr_from_double(&currentField->dblValue, &result);
+			vt_bstr_from_double(&arg2.pvarVal->dblVal, &result);
 			write_str(result.bstrVal);
 		}
 		else
 		{
 			// Unknown
 			write_str("\"Unknown_Value_");
-			write_dec_int64(&currentField->iValue, ppszString, pcchString);
+			write_dec_int64(&arg2.pvarVal->llVal, ppszString, pcchString);
 			write('"');
 		}
 	}
+
+	// Free the enumerator and arguments
+	if (arg1.pvarVal->vt == VT_DISPATCH)
+		arg1.pvarVal->pdispVal->lpVtbl->Release(arg1.pvarVal->pdispVal);
+	else if (arg1.pvarVal->vt == VT_BSTR)
+		SysFreeString(arg1.pvarVal->bstrVal);
+
+	if (arg2.pvarVal->vt == VT_DISPATCH)
+		arg2.pvarVal->pdispVal->lpVtbl->Release(arg2.pvarVal->pdispVal);
+	else if (arg2.pvarVal->vt == VT_BSTR)
+		SysFreeString(arg2.pvarVal->bstrVal);
+
+	vtEnumFunc.pdispVal->lpVtbl->Release(vtEnumFunc.pdispVal);
 
 	// Output the closing brace
 	if (bPretty)
@@ -197,7 +313,7 @@ int dumps(Object *pobjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, i
 		write_str("\r\n");
 		write_indent(iLevel);
 	}
-	write(isIndexed ? ']' : '}');
+	write(objectType == ARRAY ? ']' : '}');
 
 	return 0;
 }

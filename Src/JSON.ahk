@@ -1,156 +1,102 @@
-﻿
+﻿#Requires AutoHotkey v2.0
+
 class JSON
 {
-	static version := "0.6.0-git-dev"
+	static version := "1.6.0-git-dev"
 
-	BoolsAsInts[]
-	{
-		get
-		{
-			this._init()
-			return NumGet(this.lib.bBoolsAsInts, "Int")
-		}
-
-		set
-		{
-			this._init()
-			NumPut(value, this.lib.bBoolsAsInts, "Int")
-			return value
-		}
+	static BoolsAsInts {
+		get => this.lib.bBoolsAsInts
+		set => this.lib.bBoolsAsInts := value
 	}
 
-	NullsAsStrings[]
-	{
-		get
-		{
-			this._init()
-			return NumGet(this.lib.bNullsAsStrings, "Int")
-		}
-
-		set
-		{
-			this._init()
-			NumPut(value, this.lib.bNullsAsStrings, "Int")
-			return value
-		}
+	static NullsAsStrings {
+		get => this.lib.bNullsAsStrings
+		set => this.lib.bNullsAsStrings := value
 	}
 
-	EmptyObjectsAsArrays[]
-	{
-		get
-		{
-			this._init()
-			return NumGet(this.lib.bEmptyObjectsAsArrays, "Int")
-		}
-
-		set
-		{
-			this._init()
-			NumPut(value, this.lib.bEmptyObjectsAsArrays, "Int")
-			return value
-		}
+	static EmptyObjectsAsArrays {
+		get => this.lib.bEmptyObjectsAsArrays
+		set => this.lib.bEmptyObjectsAsArrays := value
 	}
 
-	EscapeUnicode[]
-	{
-		get
-		{
-			this._init()
-			return NumGet(this.lib.bEscapeUnicode, "Int")
-		}
-
-		set
-		{
-			this._init()
-			NumPut(value, this.lib.bEscapeUnicode, "Int")
-			return value
-		}
+	static EscapeUnicode {
+		get => this.lib.bEscapeUnicode
+		set => this.lib.bEscapeUnicode := value
 	}
 
-	_init()
-	{
-		if (this.lib)
-			return
+	static fnCastString := Format.Bind('{}')
+
+	static __New() {
 		this.lib := this._LoadLib()
 
 		; Populate globals
-		NumPut(&this.True, this.lib.objTrue, "UPtr")
-		NumPut(&this.False, this.lib.objFalse, "UPtr")
-		NumPut(&this.Null, this.lib.objNull, "UPtr")
+		this.lib.objTrue := ObjPtr(this.True)
+		this.lib.objFalse := ObjPtr(this.False)
+		this.lib.objNull := ObjPtr(this.Null)
 
-		this.fnGetObj := Func("Object")
-		NumPut(&this.fnGetObj, this.lib.fnGetObj, "UPtr")
+		this.lib.fnGetMap := ObjPtr(Map)
+		this.lib.fnGetArray := ObjPtr(Array)
 
-		this.fnCastString := Func("Format").Bind("{}")
-		NumPut(&this.fnCastString, this.lib.fnCastString, "UPtr")
+		this.lib.fnCastString := ObjPtr(this.fnCastString)
+
+		this.lib.fnPopup := CallbackCreate((i) => MsgBox(i), "C", 1)
 	}
 
-	_LoadLib()
-	{
-		MCL.CompilerSuffix .= " -O3" ; Gotta go fast
-		return MCL.FromC("#include ""dumps.c""`n#include ""loads.c""")
+	static _LoadLib() {
+		; MCL.CompilerSuffix .= " -O3" ; Gotta go fast
+		return MCL.FromC('#include "dumps.c"`n#include "loads.c"')
 	}
 
-	Dump(obj, pretty := 0)
+	static Dump(obj, pretty := 0)
 	{
-		this._init()
-		if (!IsObject(obj))
-			throw Exception("Input must be object")
+		if !IsObject(obj)
+			throw Error("Input must be object")
 		size := 0
-		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr", 0, "Int*", size
-		, "Int", !!pretty, "Int", 0, "CDecl Ptr")
-		VarSetCapacity(buf, size*2+2, 0)
-		DllCall(this.lib.dumps, "Ptr", &obj, "Ptr*", &buf, "Int*", size
-		, "Int", !!pretty, "Int", 0, "CDecl Ptr")
-		return StrGet(&buf, size, "UTF-16")
+		this.lib.dumps(ObjPtr(obj), 0, &size, !!pretty, 0)
+		buf := Buffer(size*5 + 2, 0)
+		bufbuf := Buffer(A_PtrSize)
+		NumPut("Ptr", buf.Ptr, bufbuf)
+		this.lib.dumps(ObjPtr(obj), bufbuf, &size, !!pretty, 0)
+		return StrGet(buf, "UTF-16")
 	}
 
-	Load(ByRef json)
-	{
-		this._init()
-
+	static Load(json) {
 		_json := " " json ; Prefix with a space to provide room for BSTR prefixes
-		VarSetCapacity(pJson, A_PtrSize)
-		NumPut(&_json, &pJson, 0, "Ptr")
+		pJson := Buffer(A_PtrSize)
+		NumPut("Ptr", StrPtr(_json), pJson)
 
-		VarSetCapacity(pResult, 24)
+		pResult := Buffer(24)
 
-		if (r := DllCall(this.lib.loads, "Ptr", &pJson, "Ptr", &pResult , "CDecl Int")) || ErrorLevel
+		if r := this.lib.loads(pJson, pResult)
 		{
-			throw Exception("Failed to parse JSON (" r "," ErrorLevel ")", -1
+			throw Error("Failed to parse JSON (" r ")", -1
 			, Format("Unexpected character at position {}: '{}'"
-			, (NumGet(pJson)-&_json)//2, Chr(NumGet(NumGet(pJson), "short"))))
+			, (NumGet(pJson, 'UPtr') - StrPtr(_json)) // 2, Chr(NumGet(NumGet(pJson, 'UPtr'), 'Short'))))
 		}
 
-		result := ComObject(0x400C, &pResult)[]
-		if (IsObject(result))
-			ObjRelease(&result)
+		result := ComValue(0x400C, pResult.Ptr)[] ; VT_BYREF | VT_VARIANT
+		if IsObject(result)
+			ObjRelease(ObjPtr(result))
 		return result
 	}
 
-	True[]
-	{
-		get
-		{
-			static _ := {"value": true, "name": "true"}
+	static True {
+		get {
+			static _ := {value: true, name: 'true'}
 			return _
 		}
 	}
 
-	False[]
-	{
-		get
-		{
-			static _ := {"value": false, "name": "false"}
+	static False {
+		get {
+			static _ := {value: false, name: 'false'}
 			return _
 		}
 	}
 
-	Null[]
-	{
-		get
-		{
-			static _ := {"value": "", "name": "null"}
+	static Null {
+		get {
+			static _ := {value: '', name: 'null'}
 			return _
 		}
 	}
