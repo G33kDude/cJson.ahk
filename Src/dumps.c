@@ -97,6 +97,12 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 	VARIANT hadSet = { .vt = VT_EMPTY };
 	HRESULT hadSetResult = pObjIn->lpVtbl->Invoke(pObjIn, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadSet, NULL, NULL);
 
+	BSTR ownProps = L"OwnProps"; // SysAllocString(L"OwnProps");
+	VARIANT ownPropsArg = { .vt = VT_BSTR, .bstrVal = ownProps };
+	hasMethodParams.rgvarg = &ownPropsArg;
+	VARIANT hadOwnProps = { .vt = VT_EMPTY };
+	HRESULT hadOwnPropsResult = pObjIn->lpVtbl->Invoke(pObjIn, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadOwnProps, NULL, NULL);
+
 	enum ObjectType objectType;
 	if (hadPush.vt == VT_I4 && hadPush.intVal != 0) // Has Push
 	{
@@ -105,6 +111,10 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 	else if (hadSet.vt == VT_I4 && hadSet.intVal != 0) // Has Set
 	{
 		objectType = MAP;
+	}
+	else if (hadOwnProps.vt == VT_I4 && hadOwnProps.intVal != 0) // Has OwnProps
+	{
+		objectType = OBJECT;
 	}
 	else
 	{
@@ -116,24 +126,54 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 	}
 
 	// Retrieve an enumerator for two values
-	LPOLESTR nameEnum = L"__Enum";
-	DISPID dispidEnum = 0;
-	pObjIn->lpVtbl->GetIDsOfNames(pObjIn, NULL, &nameEnum, 1, 0, &dispidEnum);
-
-	VARIANT two = { .vt = VT_I4, .intVal = 2 };
-	DISPPARAMS dispparams = { .cArgs = 1, .cNamedArgs = 0, .rgvarg = &two };
 	VARIANT vtEnumFunc = { .vt = VT_EMPTY };
-	pObjIn->lpVtbl->Invoke(
-		pObjIn,
-		dispidEnum,
-		NULL,
-		0,
-		DISPATCH_METHOD | DISPATCH_PROPERTYGET,
-		&dispparams,
-		&vtEnumFunc,
-		NULL,
-		NULL
-	);
+	if (objectType == OBJECT)
+	{
+		DISPID dispidOwnProps;
+		LPOLESTR ownProps = L"OwnProps";
+		pObjIn->lpVtbl->GetIDsOfNames(pObjIn, IID_NULL, &ownProps, 1, 0, &dispidOwnProps);
+		if (dispidOwnProps == DISPID_UNKNOWN) {
+			write_str("\"Unknown_Object_");
+			int64_t val = (intptr_t)pObjIn;
+			write_dec_int64(&val, ppszString, pcchString);
+			write('"');
+			return 0;
+		}
+
+		DISPPARAMS noParams = { .cArgs = 0, .cNamedArgs = 0 };
+		VARIANT ownPropsResult = { .vt = VT_EMPTY };
+		pObjIn->lpVtbl->Invoke(
+			pObjIn,
+			dispidOwnProps,
+			NULL,
+			0,
+			DISPATCH_METHOD,
+			&noParams,
+			&vtEnumFunc, 
+			NULL,
+			NULL
+		);
+	}
+	else
+	{
+		LPOLESTR nameEnum = L"__Enum";
+		DISPID dispidEnum = 0;
+		pObjIn->lpVtbl->GetIDsOfNames(pObjIn, NULL, &nameEnum, 1, 0, &dispidEnum);
+
+		VARIANT two = { .vt = VT_I4, .intVal = 2 };
+		DISPPARAMS dispparams = { .cArgs = 1, .cNamedArgs = 0, .rgvarg = &two };
+		pObjIn->lpVtbl->Invoke(
+			pObjIn,
+			dispidEnum,
+			NULL,
+			0,
+			DISPATCH_METHOD | DISPATCH_PROPERTYGET,
+			&dispparams,
+			&vtEnumFunc,
+			NULL,
+			NULL
+		);
+	}
 
 	if (vtEnumFunc.vt != VT_DISPATCH) {
 		write_str("\"Unknown_Object_");
@@ -195,7 +235,7 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 		}
 
 		// Output the key and colon
-		if (objectType == MAP)
+		if (objectType == MAP || objectType == OBJECT)
 		{
 			if (arg1.pvarVal->vt == VT_I4)
 			{
