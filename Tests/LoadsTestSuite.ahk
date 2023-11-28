@@ -181,6 +181,16 @@ class LoadsTestSuite
 		Yunit.assert(isEqual(produced, expected), Format(this.message, String(expected), String(produced)))
 	}
 
+	Test_Garbage_Collection()
+	{
+		deleted := false
+		produced := '[1, 2, 3]'
+		produced := JSON.Load(produced)
+		produced.__Delete := ((*) => deleted := true)
+		produced := ""
+		Yunit.Assert(deleted, "Was not deleted!")
+	}
+
 	End()
 	{
 		;

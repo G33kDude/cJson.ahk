@@ -135,6 +135,15 @@ class DumpsTestSuite
 		Yunit.assert(produced == expected, Format(this.message, expected, produced))
 	}
 
+	Test_Garbage_Collection()
+	{
+		deleted := false
+		sample := [[{__Delete: ((*) => deleted := true)}]]
+		JSON.Dump(sample)
+		sample := ""
+		Yunit.Assert(deleted, "Was not deleted!")
+	}
+
 	End()
 	{
 	}
