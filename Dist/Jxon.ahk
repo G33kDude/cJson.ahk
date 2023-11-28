@@ -3,14 +3,7 @@
 ; compatibility with other JSON libraries.
 ;
 
-#Include %A_LineFile%\..\JSON.ahk
+#Include JSON.ahk
 
-Jxon_Load(ByRef _json)
-{
-    return JSON.Load(_json)
-}
-
-Jxon_Dump(obj, pretty := 0)
-{
-    return JSON.Dump(obj, pretty)
-}
+Jxon_Load(&_json) => JSON.Load(&_json)
+Jxon_Dump(obj, pretty := 0) => JSON.Dump(obj, pretty)
