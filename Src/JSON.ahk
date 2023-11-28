@@ -1,4 +1,4 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 
 class JSON
 {
@@ -12,11 +12,6 @@ class JSON
 	static NullsAsStrings {
 		get => this.lib.bNullsAsStrings
 		set => this.lib.bNullsAsStrings := value
-	}
-
-	static EmptyObjectsAsArrays {
-		get => this.lib.bEmptyObjectsAsArrays
-		set => this.lib.bEmptyObjectsAsArrays := value
 	}
 
 	static EscapeUnicode {

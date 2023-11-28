@@ -8,9 +8,6 @@ int write_escaped(LPTSTR stronk, LPTSTR *ppszString, DWORD *pcchString);
 static IDispatch *fnCastString;
 MCL_EXPORT_GLOBAL(fnCastString, Ptr);
 
-static bool bEmptyObjectsAsArrays = false;
-MCL_EXPORT_GLOBAL(bEmptyObjectsAsArrays, Int);
-
 #define write(char)              \
 	if (ppszString)              \
 		*(*ppszString)++ = char; \
