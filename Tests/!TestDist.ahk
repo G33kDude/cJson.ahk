@@ -1,7 +1,5 @@
-#NoEnv
-SetBatchLines, -1
+#Requires AutoHotkey 2.0
 #SingleInstance Off
-#Warn
 
 ; Include Yunit files
 #include %A_LineFile%/../Lib/Yunit
