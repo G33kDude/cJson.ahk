@@ -3,13 +3,16 @@
 Object.Prototype.ToString := ObjectToString
 
 ObjectToString(obj) {
-	if !obj.HasProp("__Item")
-		return "{}"
+	if !obj.HasProp("__Item") {
+		if !obj.HasMethod("OwnProps")
+			return "{}"
+		obj := obj.OwnProps()
+	}
 	out := ""
 	for k, v in obj {
 		out .= "," String(k) ":" String(v)
 	}
-	return "{" SubStr(out, 2) "}"
+	return Type(obj) "{" SubStr(out, 2) "}"
 }
 
 class LoadsTestSuite
