@@ -2,7 +2,7 @@
 
 class JSON
 {
-	static version := "1.6.0-git-dev"
+	static version := "2.0.0-git-dev"
 
 	static BoolsAsInts {
 		get => this.lib.bBoolsAsInts
