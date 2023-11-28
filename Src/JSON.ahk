@@ -33,8 +33,6 @@ class JSON
 		this.lib.fnGetArray := ObjPtr(Array)
 
 		this.lib.fnCastString := ObjPtr(this.fnCastString)
-
-		this.lib.fnPopup := CallbackCreate((i) => MsgBox(i), "C", 1)
 	}
 
 	static _LoadLib() {
