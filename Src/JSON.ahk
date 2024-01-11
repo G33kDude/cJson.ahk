@@ -76,6 +76,8 @@ class JSON
     }
 
     static Stringify(obj) => this.Dump(obj)
+    static DumpFile(obj, path, pretty := 0, encoding?)
+        => FileOpen(path, "w", encoding?).Write(this.Dump(obj, pretty))
 
     /**
      * Convert an object to a JSON string
@@ -99,6 +101,7 @@ class JSON
     }
 
     static Parse(json) => this.Load(json)
+    static LoadFile(path, options?) => this.Load(FileRead(path, options?))
 
     /**
      * Parse a JSON string into an object
