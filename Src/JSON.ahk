@@ -4,23 +4,55 @@ class JSON
 {
     static version := "2.0.0-git-dev"
 
+    /**
+     * When true, Boolean values in the JSON will be decoded as numbers 1 and 0
+     * for true and false respectively.
+     *
+     * When false, Boolean values in the JSON will be decoded as references to
+     * {@link JSON.True} and {@link JSON.False} for true and false respectively.
+     *
+     * By default, this property is true.
+     */
     static BoolsAsInts {
         get => this.lib.bBoolsAsInts
         set => this.lib.bBoolsAsInts := value
     }
 
+    /**
+     * When true, null values in the JSON will be decoded as ''.
+     *
+     * When false, null values in the JSON will be decoded as references to
+     * {@link JSON.Null}.
+     *
+     * By default, this property is true.
+     */
     static NullsAsStrings {
         get => this.lib.bNullsAsStrings
         set => this.lib.bNullsAsStrings := value
     }
 
+    /**
+     * When true, unicode values in the JSON will be encoded using backslash
+     * escape sequences, such as '💩' will be encoded as "\ud83d\udca9". This
+     * is to improve compatibility with external systems.
+     *
+     * When false, unicode values will be left as their original characters.
+     *
+     * By default, this property is true.
+     */
     static EscapeUnicode {
         get => this.lib.bEscapeUnicode
         set => this.lib.bEscapeUnicode := value
     }
 
+    /**
+     * Utility function for the MCode to convert non-string values to string.
+     */
     static fnCastString := Format.Bind('{}')
 
+    /**
+     * Constructor
+     */
     static __New() {
         this.lib := this._LoadLib()
 
@@ -35,11 +67,22 @@ class JSON
         this.lib.fnCastString := ObjPtr(this.fnCastString)
     }
 
+    /**
+     * Internal function to load the MCode
+     */
     static _LoadLib() {
         ; MCL.CompilerSuffix .= " -O3" ; Gotta go fast
         return MCL.FromC('#include "dumps.c"`n#include "loads.c"')
     }
 
+    /**
+     * Convert an object to a JSON string
+     *
+     * @param obj The object to convert
+     * @param pretty Whether to pretty-print the JSON string (default: 0)
+     *
+     * @return The JSON string
+     */
     static Dump(obj, pretty := 0)
     {
         if !IsObject(obj)
@@ -53,6 +96,13 @@ class JSON
         return StrGet(buf, "UTF-16")
     }
 
+    /**
+     * Parse a JSON string into an object
+     *
+     * @param json The JSON string to parse
+     *
+     * @return The parsed object
+     */
     static Load(json) {
         _json := " " json ; Prefix with a space to provide room for BSTR prefixes
         pJson := Buffer(A_PtrSize)
@@ -73,6 +123,12 @@ class JSON
         return result
     }
 
+    /**
+     * Object to act as a stand-in for JSON's "true" as AHK has no native
+     * boolean type.
+     *
+     * @see {@link JSON.BoolsAsInts}
+     */
     static True {
         get {
             static _ := {value: true, name: 'true'}
@@ -80,6 +136,12 @@ class JSON
         }
     }
 
+    /**
+     * Object to act as a stand-in for JSON's "false" as AHK has no native
+     * boolean type.
+     *
+     * @see {@link JSON.BoolsAsInts}
+     */
     static False {
         get {
             static _ := {value: false, name: 'false'}
@@ -87,6 +149,12 @@ class JSON
         }
     }
 
+    /**
+     * Object to act as a stand-in for JSON's "null" as AHK has no native
+     * null type.
+     *
+     * @see {@link JSON.NullsAsStrings}
+     */
     static Null {
         get {
             static _ := {value: '', name: 'null'}
