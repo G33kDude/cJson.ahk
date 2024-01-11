@@ -75,6 +75,8 @@ class JSON
         return MCL.FromC('#include "dumps.c"`n#include "loads.c"')
     }
 
+    static Stringify(obj) => this.Dump(obj)
+
     /**
      * Convert an object to a JSON string
      *
@@ -95,6 +97,8 @@ class JSON
         this.lib.dumps(ObjPtr(obj), bufbuf, &size, !!pretty, 0)
         return StrGet(buf, "UTF-16")
     }
+
+    static Parse(json) => this.Load(json)
 
     /**
      * Parse a JSON string into an object
