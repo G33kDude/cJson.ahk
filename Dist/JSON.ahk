@@ -299,7 +299,13 @@ class JSON
 	static _LoadLib() {
 		return A_PtrSize = 4 ? this._LoadLib32Bit() : this._LoadLib64Bit()
 	}
-
+	; Json.Dump(obj_to_serialize, pretty := INT)
+	; Serializes an object to a JSON string.
+	; @param obj {Object} - The Object to be serialized.
+	; @param pretty {Integer} (optional) - 0 for minified JSON, 1 for pretty JSON with indentation.
+	;   Default is 0.
+	; @throws Error if the input is not an object or serialization fails.
+	; @return {String} - The JSON string representation of the object.
 	static Dump(obj, pretty := 0)
 	{
 		if !IsObject(obj)
@@ -312,7 +318,11 @@ class JSON
 		this.lib.dumps(ObjPtr(obj), bufbuf, &size, !!pretty, 0)
 		return StrGet(buf, "UTF-16")
 	}
-
+	; Json.Load(json_str)
+	; Deserializes a JSON string into an AutoHotkey object.
+	; @param json {String} - The JSON string to be deserialized.
+	; @throws Error with details if JSON string cannot be parsed.
+	; @return {Object} - The AutoHotkey object representation of the JSON string.
 	static Load(json) {
 		_json := " " json ; Prefix with a space to provide room for BSTR prefixes
 		pJson := Buffer(A_PtrSize)
