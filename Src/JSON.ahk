@@ -2,7 +2,7 @@
 
 class JSON
 {
-    static version := "2.0.0-git-dev"
+    static version := "2.1.0-git-dev"
 
     /**
      * When true, Boolean values in the JSON will be decoded as numbers 1 and 0
