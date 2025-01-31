@@ -117,7 +117,8 @@ class JSON
      * @return The parsed object
      */
     static Load(json) {
-        _json := " " json ; Prefix with a space to provide room for BSTR prefixes
+        ; Prefix with a space to provide room for BSTR prefixes
+        _json := " " (json is VarRef ? %json% : json)
         pJson := Buffer(A_PtrSize)
         NumPut("Ptr", StrPtr(_json), pJson)
 
