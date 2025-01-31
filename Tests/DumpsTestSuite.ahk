@@ -86,6 +86,29 @@ class DumpsTestSuite
 		Yunit.assert(produced == expected, Format(this.message, expected, produced))
 	}
 
+	Test_Array_Nested_Pretty()
+	{
+		expected := '
+		( LTrim Join`r`n
+		[
+		`t[
+		`t`t1,
+		`t`t2
+		`t],
+		`t[
+		`t`t3,
+		`t`t[
+		`t`t`t4,
+		`t`t`t5
+		`t`t],
+		`t`t6
+		`t]
+		]
+		)'
+		produced := JSON.Dump([[1, 2], [3, [4, 5], 6]], true)
+		Yunit.assert(produced == expected, Format(this.message, expected, produced))
+	}
+
 	Test_Array_Com()
 	{
 		expected := '\["Unknown_Object_\d+"\]'
