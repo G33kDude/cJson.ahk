@@ -7,21 +7,31 @@ class DumpsTestSuite
 		this.message := "Expected {} but produced {}"
 	}
 
-	Test_Invalid_Input_Num()
+	Test_Integer()
 	{
-		expected := 'Input must be object'
+		expected := '12345'
 		try
-			produced := JSON.Dump(42)
+			produced := JSON.Dump(12345)
 		catch as e
 			produced := e.message
 		Yunit.assert(produced == expected, Format(this.message, expected, produced))
 	}
 
-	Test_Invalid_Input_String()
+	Test_Float()
 	{
-		expected := 'Input must be object'
+		expected := '12345.6'
 		try
-			produced := JSON.Dump("string")
+			produced := JSON.Dump(12345.6)
+		catch as e
+			produced := e.message
+		Yunit.assert(produced == expected, Format(this.message, expected, produced))
+	}
+
+	Test_String()
+	{
+		expected := "`"{\`"Test Key\`": \`"Test\nValue\`"}`""
+		try
+			produced := JSON.Dump("{`"Test Key`": `"Test`nValue`"}")
 		catch as e
 			produced := e.message
 		Yunit.assert(produced == expected, Format(this.message, expected, produced))

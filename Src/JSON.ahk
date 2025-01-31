@@ -89,14 +89,20 @@ class JSON
      */
     static Dump(obj, pretty := 0)
     {
-        if !IsObject(obj)
-            throw Error("Input must be object")
+        variant_buf := Buffer(24, 0)  ; Make a buffer big enough for a VARIANT.
+        var := ComValue(0x400C, variant_buf.ptr)  ; Make a reference to a VARIANT.
+        var[] := obj
+
         size := 0
-        this.lib.dumps(ObjPtr(obj), 0, &size, !!pretty, 0)
+        this.lib.dumps(variant_buf, 0, &size, !!pretty, 0)
         buf := Buffer(size*5 + 2, 0)
         bufbuf := Buffer(A_PtrSize)
         NumPut("Ptr", buf.Ptr, bufbuf)
-        this.lib.dumps(ObjPtr(obj), bufbuf, &size, !!pretty, 0)
+        this.lib.dumps(variant_buf, bufbuf, &size, !!pretty, 0)
+
+        ; If a VARIANT contains a string or object, it must be explicitly freed
+        ; by calling VariantClear or assigning a pure numeric value:
+        var[] := 0
         return StrGet(buf, "UTF-16")
     }
 

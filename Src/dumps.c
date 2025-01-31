@@ -62,14 +62,62 @@ MCL_IMPORT(BSTR, OleAut32, SysFreeString, (BSTR bstrString));
 static IID IID_NULL[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 MCL_EXPORT(dumps, Ptr, pObjIn, Ptr, ppszString, IntP, pcchString, Int, bPretty, Int, iLevel, CDecl_Ptr);
-intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, int iLevel)
+intptr_t dumps(VARIANT *pVariantIn, LPTSTR *ppszString, DWORD *pcchString, bool bPretty, int iLevel)
 {
+	if (pVariantIn->vt == VT_I4)
+	{
+		// Integer
+		int64_t val = pVariantIn->intVal;
+		write_dec_int64(&val, ppszString, pcchString);
+		return 0;
+	}
+	else if (pVariantIn->vt == VT_I8)
+	{
+		// 64-Bit Integer
+		write_dec_int64(&pVariantIn->llVal, ppszString, pcchString);
+		return 0;
+	}
+	else if (pVariantIn->vt == VT_BSTR)
+	{
+		// String
+		write_escaped(pVariantIn->bstrVal, ppszString, pcchString);
+		return 0;
+	}
+	else if (pVariantIn->vt == VT_R8)
+	{
+		// Float
+		VARIANT result;
+		vt_bstr_from_double(&pVariantIn->dblVal, &result);
+		write_str(result.bstrVal);
+		return 0;
+	}
+	else if (pVariantIn->vt != VT_DISPATCH)
+	{
+		// Unknown
+		write_str("\"Unknown_Value_");
+		write_dec_int64(&pVariantIn->llVal, ppszString, pcchString);
+		write('"');
+		return 0;
+	}
+
+	// Object
+	if (pVariantIn->pdispVal == objTrue) {
+		write_str("true");
+		return 0;
+	} else if (pVariantIn->pdispVal == objFalse) {
+		write_str("false");
+		return 0;
+	} else if (pVariantIn->pdispVal == objNull) {
+		write_str("null");
+		return 0;
+	}
+
 	DISPID dispidHasMethod;
 	LPOLESTR hasMethod = L"HasMethod";
-	pObjIn->lpVtbl->GetIDsOfNames(pObjIn, IID_NULL, &hasMethod, 1, 0, &dispidHasMethod);
+	pVariantIn->pdispVal->lpVtbl->GetIDsOfNames(pVariantIn->pdispVal, IID_NULL, &hasMethod, 1, 0, &dispidHasMethod);
 	if (dispidHasMethod == DISPID_UNKNOWN) {
 		write_str("\"Unknown_Object_");
-		int64_t val = (intptr_t)pObjIn;
+		int64_t val = (intptr_t)pVariantIn->pdispVal;
 		write_dec_int64(&val, ppszString, pcchString);
 		write('"');
 		return 0;
@@ -85,20 +133,20 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 	};
 
 	VARIANT hadPush = { .vt = VT_EMPTY };
-	HRESULT hadPushResult = pObjIn->lpVtbl->Invoke(pObjIn, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadPush, NULL, NULL);
+	HRESULT hadPushResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadPush, NULL, NULL);
 
 	BSTR set = L"Set"; // SysAllocString(L"Set");
 	VARIANT setArg = { .vt = VT_BSTR, .bstrVal = set};
 
 	hasMethodParams.rgvarg = &setArg;
 	VARIANT hadSet = { .vt = VT_EMPTY };
-	HRESULT hadSetResult = pObjIn->lpVtbl->Invoke(pObjIn, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadSet, NULL, NULL);
+	HRESULT hadSetResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadSet, NULL, NULL);
 
 	BSTR ownProps = L"OwnProps"; // SysAllocString(L"OwnProps");
 	VARIANT ownPropsArg = { .vt = VT_BSTR, .bstrVal = ownProps };
 	hasMethodParams.rgvarg = &ownPropsArg;
 	VARIANT hadOwnProps = { .vt = VT_EMPTY };
-	HRESULT hadOwnPropsResult = pObjIn->lpVtbl->Invoke(pObjIn, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadOwnProps, NULL, NULL);
+	HRESULT hadOwnPropsResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadOwnProps, NULL, NULL);
 
 	enum ObjectType objectType;
 	if (hadPush.vt == VT_I4 && hadPush.intVal != 0) // Has Push
@@ -116,7 +164,7 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 	else
 	{
 		write_str("\"Unknown_Object_");
-		int64_t val = (intptr_t)pObjIn;
+		int64_t val = (intptr_t)pVariantIn->pdispVal;
 		write_dec_int64(&val, ppszString, pcchString);
 		write('"');
 		return 0;
@@ -128,10 +176,10 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 	{
 		DISPID dispidOwnProps;
 		LPOLESTR ownProps = L"OwnProps";
-		pObjIn->lpVtbl->GetIDsOfNames(pObjIn, IID_NULL, &ownProps, 1, 0, &dispidOwnProps);
+		pVariantIn->pdispVal->lpVtbl->GetIDsOfNames(pVariantIn->pdispVal, IID_NULL, &ownProps, 1, 0, &dispidOwnProps);
 		if (dispidOwnProps == DISPID_UNKNOWN) {
 			write_str("\"Unknown_Object_");
-			int64_t val = (intptr_t)pObjIn;
+			int64_t val = (intptr_t)pVariantIn->pdispVal;
 			write_dec_int64(&val, ppszString, pcchString);
 			write('"');
 			return 0;
@@ -139,8 +187,8 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 
 		DISPPARAMS noParams = { .cArgs = 0, .cNamedArgs = 0 };
 		VARIANT ownPropsResult = { .vt = VT_EMPTY };
-		pObjIn->lpVtbl->Invoke(
-			pObjIn,
+		pVariantIn->pdispVal->lpVtbl->Invoke(
+			pVariantIn->pdispVal,
 			dispidOwnProps,
 			NULL,
 			0,
@@ -155,12 +203,12 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 	{
 		LPOLESTR nameEnum = L"__Enum";
 		DISPID dispidEnum = 0;
-		pObjIn->lpVtbl->GetIDsOfNames(pObjIn, NULL, &nameEnum, 1, 0, &dispidEnum);
+		pVariantIn->pdispVal->lpVtbl->GetIDsOfNames(pVariantIn->pdispVal, NULL, &nameEnum, 1, 0, &dispidEnum);
 
 		VARIANT two = { .vt = VT_I4, .intVal = 2 };
 		DISPPARAMS dispparams = { .cArgs = 1, .cNamedArgs = 0, .rgvarg = &two };
-		pObjIn->lpVtbl->Invoke(
-			pObjIn,
+		pVariantIn->pdispVal->lpVtbl->Invoke(
+			pVariantIn->pdispVal,
 			dispidEnum,
 			NULL,
 			0,
@@ -174,7 +222,7 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 
 	if (vtEnumFunc.vt != VT_DISPATCH) {
 		write_str("\"Unknown_Object_");
-		int64_t val = (intptr_t)pObjIn;
+		int64_t val = (intptr_t)pVariantIn->pdispVal;
 		write_dec_int64(&val, ppszString, pcchString);
 		write('"');
 		return 0;
@@ -279,56 +327,7 @@ intptr_t dumps(IDispatch *pObjIn, LPTSTR *ppszString, DWORD *pcchString, bool bP
 		}
 
 		// Output the value
-		if (arg2.pvarVal->vt == VT_I4)
-		{
-			// Integer
-			int64_t val = arg2.pvarVal->intVal;
-			write_dec_int64(&val, ppszString, pcchString);
-		}
-		else if (arg2.pvarVal->vt == VT_I8)
-		{
-			// 64-Bit Integer
-			write_dec_int64(&arg2.pvarVal->llVal, ppszString, pcchString);
-		}
-		else if (arg2.pvarVal->vt == VT_DISPATCH)
-		{
-			// Object
-			if (arg2.pvarVal->pdispVal == objTrue)
-			{
-				write_str("true");
-			}
-			else if (arg2.pvarVal->pdispVal == objFalse)
-			{
-				write_str("false");
-			}
-			else if (arg2.pvarVal->pdispVal == objNull)
-			{
-				write_str("null");
-			}
-			else
-			{
-				dumps(arg2.pvarVal->pdispVal, ppszString, pcchString, bPretty, iLevel + 1);
-			}
-		}
-		else if (arg2.pvarVal->vt == VT_BSTR)
-		{
-			// String
-			write_escaped(arg2.pvarVal->bstrVal, ppszString, pcchString);
-		}
-		else if (arg2.pvarVal->vt == VT_R8)
-		{
-			// Float
-			VARIANT result;
-			vt_bstr_from_double(&arg2.pvarVal->dblVal, &result);
-			write_str(result.bstrVal);
-		}
-		else
-		{
-			// Unknown
-			write_str("\"Unknown_Value_");
-			write_dec_int64(&arg2.pvarVal->llVal, ppszString, pcchString);
-			write('"');
-		}
+		dumps(arg2.pvarVal, ppszString, pcchString, bPretty, iLevel + 1);
 	}
 
 	// Free the enumerator and arguments
