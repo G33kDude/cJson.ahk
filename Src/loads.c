@@ -19,7 +19,7 @@ void comobjset(IDispatch *pObj, BSTR key, VARIANT *value)
 {
 	// Get the DispID for DISPATCH_PROPERTYPUT
 	DISPID dispid = 0;
-	pObj->lpVtbl->GetIDsOfNames(pObj, NULL, &key, 1, 0, &dispid);
+	pObj->lpVtbl->GetIDsOfNames(pObj, IID_NULL, &key, 1, 0, &dispid);
 
 	VARIANT args[2];
 	args[0].vt = value->vt;
@@ -32,7 +32,7 @@ void comobjset(IDispatch *pObj, BSTR key, VARIANT *value)
 		.cArgs = 2,
 		.cNamedArgs = 0,
 		.rgvarg = args};
-	pObj->lpVtbl->Invoke(pObj, DISPID_VALUE, NULL, 0, DISPATCH_PROPERTYPUT, &dispparams, NULL, NULL, NULL);
+	pObj->lpVtbl->Invoke(pObj, DISPID_VALUE, IID_NULL, 0, DISPATCH_PROPERTYPUT, &dispparams, NULL, NULL, NULL);
 
 	// Decrement the reference count of the object given by pfnGetObj
 	if (value->vt == VT_DISPATCH)
@@ -79,7 +79,7 @@ int loads(short **ppJson, VARIANT *pResult)
 		// Get an object from the host script to populate
 		DISPPARAMS dispparams = {.cArgs = 0, .cNamedArgs = 0};
 		VARIANT pObjVt;
-		fnGetMap->lpVtbl->Invoke(fnGetMap, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
+		fnGetMap->lpVtbl->Invoke(fnGetMap, 0, IID_NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
 		IDispatch *pObj = pObjVt.pdispVal;
 
 		// Process key/value pairs
@@ -137,13 +137,13 @@ int loads(short **ppJson, VARIANT *pResult)
 		// Get an array from the host script to populate
 		DISPPARAMS dispparams = {.cArgs = 0, .cNamedArgs = 0};
 		VARIANT pObjVt;
-		fnGetArray->lpVtbl->Invoke(fnGetArray, 0, NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
+		fnGetArray->lpVtbl->Invoke(fnGetArray, 0, IID_NULL, 0, DISPATCH_METHOD, &dispparams, &pObjVt, NULL, NULL);
 		IDispatch *pObj = pObjVt.pdispVal;
 
 		// Get the DispID for Push method
 		LPOLESTR names[] = { L"Push\0" };
 		DISPID dispidPush = 0;
-		pObj->lpVtbl->GetIDsOfNames(pObj, NULL, names, 1, 0, &dispidPush);
+		pObj->lpVtbl->GetIDsOfNames(pObj, IID_NULL, names, 1, 0, &dispidPush);
 
 		// Process values pairs
 		for (unsigned int keyNum = 1;; ++keyNum)
@@ -162,7 +162,7 @@ int loads(short **ppJson, VARIANT *pResult)
 				.cArgs = 1,
 				.cNamedArgs = 0,
 				.rgvarg = pResult};
-			pObj->lpVtbl->Invoke(pObj, dispidPush, NULL, 0, DISPATCH_METHOD, &dispparams, NULL, NULL, NULL);
+			pObj->lpVtbl->Invoke(pObj, dispidPush, IID_NULL, 0, DISPATCH_METHOD, &dispparams, NULL, NULL, NULL);
 
 			// Decrement the reference count of the object
 			if (pResult->vt == VT_DISPATCH)
