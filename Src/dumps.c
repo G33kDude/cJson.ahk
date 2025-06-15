@@ -35,9 +35,9 @@ struct                                \
 Variable = {sizeof(String) - sizeof(OLECHAR), String};
 
 // Must only be used as read-only, and SysFreeString must not be used
-DECLARE_BSTR(static bstr_push, L"Push")
-DECLARE_BSTR(static bstr_set, L"Set")
-DECLARE_BSTR(static bstr_ownProps, L"OwnProps")
+DECLARE_BSTR(static s_bstrPush, L"Push")
+DECLARE_BSTR(static s_bstrSet, L"Set")
+DECLARE_BSTR(static s_bstrOwnProps, L"OwnProps")
 
 static inline HRESULT vt_bstr_from_double(double *dbInput, VARIANT *pvOutput)
 {
@@ -136,7 +136,7 @@ intptr_t dumps(VARIANT *pVariantIn, LPTSTR *ppszString, DWORD *pcchString, bool 
 		return 0;
 	}
 
-	VARIANT pushArg = { .vt = VT_BSTR, .bstrVal = bstr_push.szData};
+	VARIANT pushArg = { .vt = VT_BSTR, .bstrVal = s_bstrPush.szData};
 
 	DISPPARAMS hasMethodParams = {
 		.cArgs = 1,
@@ -146,13 +146,13 @@ intptr_t dumps(VARIANT *pVariantIn, LPTSTR *ppszString, DWORD *pcchString, bool 
 
 	VARIANT hadPush = { .vt = VT_EMPTY };
 	HRESULT hadPushResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, IID_NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadPush, NULL, NULL);
-	VARIANT setArg = { .vt = VT_BSTR, .bstrVal = bstr_set.szData};
+	VARIANT setArg = { .vt = VT_BSTR, .bstrVal = s_bstrSet.szData};
 
 	hasMethodParams.rgvarg = &setArg;
 	VARIANT hadSet = { .vt = VT_EMPTY };
 	HRESULT hadSetResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, IID_NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadSet, NULL, NULL);
 
-	VARIANT ownPropsArg = { .vt = VT_BSTR, .bstrVal = bstr_ownProps.szData };
+	VARIANT ownPropsArg = { .vt = VT_BSTR, .bstrVal = s_bstrOwnProps.szData };
 	hasMethodParams.rgvarg = &ownPropsArg;
 	VARIANT hadOwnProps = { .vt = VT_EMPTY };
 	HRESULT hadOwnPropsResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, IID_NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadOwnProps, NULL, NULL);
