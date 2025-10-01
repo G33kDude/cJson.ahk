@@ -26,6 +26,19 @@ MCL_EXPORT_GLOBAL(fnCastString, Ptr);
 		write_str("\t");                                                   \
 	}
 
+#define DECLARE_BSTR(Variable, String)\
+struct                                \
+{                                     \
+    uint32_t uLength;                 \
+    OLECHAR szData[sizeof(String)];   \
+}                                     \
+Variable = {sizeof(String) - sizeof(OLECHAR), String};
+
+// Must only be used as read-only, and SysFreeString must not be used
+DECLARE_BSTR(static s_bstrPush, L"Push")
+DECLARE_BSTR(static s_bstrSet, L"Set")
+DECLARE_BSTR(static s_bstrOwnProps, L"OwnProps")
+
 static inline HRESULT vt_bstr_from_double(double *dbInput, VARIANT *pvOutput)
 {
 	// Convert field value to VARIANT
@@ -123,8 +136,7 @@ intptr_t dumps(VARIANT *pVariantIn, LPTSTR *ppszString, DWORD *pcchString, bool 
 		return 0;
 	}
 
-	BSTR push = L"Push"; // SysAllocString(L"Push");
-	VARIANT pushArg = { .vt = VT_BSTR, .bstrVal = push};
+	VARIANT pushArg = { .vt = VT_BSTR, .bstrVal = s_bstrPush.szData};
 
 	DISPPARAMS hasMethodParams = {
 		.cArgs = 1,
@@ -133,20 +145,17 @@ intptr_t dumps(VARIANT *pVariantIn, LPTSTR *ppszString, DWORD *pcchString, bool 
 	};
 
 	VARIANT hadPush = { .vt = VT_EMPTY };
-	HRESULT hadPushResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadPush, NULL, NULL);
-
-	BSTR set = L"Set"; // SysAllocString(L"Set");
-	VARIANT setArg = { .vt = VT_BSTR, .bstrVal = set};
+	HRESULT hadPushResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, IID_NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadPush, NULL, NULL);
+	VARIANT setArg = { .vt = VT_BSTR, .bstrVal = s_bstrSet.szData};
 
 	hasMethodParams.rgvarg = &setArg;
 	VARIANT hadSet = { .vt = VT_EMPTY };
-	HRESULT hadSetResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadSet, NULL, NULL);
+	HRESULT hadSetResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, IID_NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadSet, NULL, NULL);
 
-	BSTR ownProps = L"OwnProps"; // SysAllocString(L"OwnProps");
-	VARIANT ownPropsArg = { .vt = VT_BSTR, .bstrVal = ownProps };
+	VARIANT ownPropsArg = { .vt = VT_BSTR, .bstrVal = s_bstrOwnProps.szData };
 	hasMethodParams.rgvarg = &ownPropsArg;
 	VARIANT hadOwnProps = { .vt = VT_EMPTY };
-	HRESULT hadOwnPropsResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadOwnProps, NULL, NULL);
+	HRESULT hadOwnPropsResult = pVariantIn->pdispVal->lpVtbl->Invoke(pVariantIn->pdispVal, dispidHasMethod, IID_NULL, 0, DISPATCH_METHOD, &hasMethodParams, &hadOwnProps, NULL, NULL);
 
 	enum ObjectType objectType;
 	if (hadPush.vt == VT_I4 && hadPush.intVal != 0) // Has Push
@@ -190,7 +199,7 @@ intptr_t dumps(VARIANT *pVariantIn, LPTSTR *ppszString, DWORD *pcchString, bool 
 		pVariantIn->pdispVal->lpVtbl->Invoke(
 			pVariantIn->pdispVal,
 			dispidOwnProps,
-			NULL,
+			IID_NULL,
 			0,
 			DISPATCH_METHOD,
 			&noParams,
@@ -203,14 +212,14 @@ intptr_t dumps(VARIANT *pVariantIn, LPTSTR *ppszString, DWORD *pcchString, bool 
 	{
 		LPOLESTR nameEnum = L"__Enum";
 		DISPID dispidEnum = 0;
-		pVariantIn->pdispVal->lpVtbl->GetIDsOfNames(pVariantIn->pdispVal, NULL, &nameEnum, 1, 0, &dispidEnum);
+		pVariantIn->pdispVal->lpVtbl->GetIDsOfNames(pVariantIn->pdispVal, IID_NULL, &nameEnum, 1, 0, &dispidEnum);
 
 		VARIANT two = { .vt = VT_I4, .intVal = 2 };
 		DISPPARAMS dispparams = { .cArgs = 1, .cNamedArgs = 0, .rgvarg = &two };
 		pVariantIn->pdispVal->lpVtbl->Invoke(
 			pVariantIn->pdispVal,
 			dispidEnum,
-			NULL,
+			IID_NULL,
 			0,
 			DISPATCH_METHOD | DISPATCH_PROPERTYGET,
 			&dispparams,
@@ -248,7 +257,7 @@ intptr_t dumps(VARIANT *pVariantIn, LPTSTR *ppszString, DWORD *pcchString, bool 
 		HRESULT response = vtEnumFunc.pdispVal->lpVtbl->Invoke(
 			vtEnumFunc.pdispVal,
 			0,
-			NULL,
+			IID_NULL,
 			0,
 			DISPATCH_METHOD,
 			&loopVars,
